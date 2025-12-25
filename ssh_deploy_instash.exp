@@ -1,0 +1,27 @@
+#!/usr/bin/expect -f
+set timeout 300
+spawn ssh -o StrictHostKeyChecking=no root@5.180.149.170
+expect {
+    "*password:*" {
+        send "47kvUyH~uu5dcwjM\r"
+    }
+}
+expect "#" {
+    send "cd /home/forge && git clone git@github.com:asipbajrami/instashpro.git instashpro || (cd instashpro && git pull origin main)\r"
+}
+expect "#" {
+    send "cd /home/forge/instashpro && cp .env.example .env && sed -i 's/DB_PASSWORD=.*$/DB_PASSWORD=instashpro_password/' .env\r"
+}
+expect "#" {
+    send "cd /home/forge/instashpro && docker compose up -d --build\r"
+}
+expect "#" {
+    send "ln -sf /home/forge/instashpro/instash.conf /home/forge/deployment/nginx-configs/sites-enabled/instash.conf\r"
+}
+expect "#" {
+    send "docker restart deployment-nginx\r"
+}
+expect "#" {
+    send "exit\r"
+}
+expect eof
