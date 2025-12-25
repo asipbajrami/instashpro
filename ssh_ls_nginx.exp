@@ -1,0 +1,9 @@
+#!/usr/bin/expect -f
+set timeout 30
+spawn ssh -o StrictHostKeyChecking=no root@5.180.149.170 "ls -la /home/forge/deployment/nginx-configs/sites-enabled/"
+expect {
+    "*password:*" {
+        send "47kvUyH~uu5dcwjM\r"
+    }
+}
+expect eof

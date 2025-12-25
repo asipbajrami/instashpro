@@ -21,11 +21,6 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Health Check
-Route::get('health', function () {
-    return response()->json(['status' => 'ok']);
-});
-
 // Instagram Routes
 Route::prefix('instagram')->group(function () {
     Route::get('{username}/profile', [InstagramController::class, 'upsertProfile']);

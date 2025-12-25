@@ -1,0 +1,21 @@
+#!/usr/bin/expect -f
+set timeout 30
+spawn ssh -o StrictHostKeyChecking=no root@5.180.149.170
+expect {
+    "*password:*" {
+        send "47kvUyH~uu5dcwjM\r"
+    }
+}
+expect "#" {
+    send "curl -I -H 'Host: instash.datafynow.ai' http://localhost\r"
+}
+expect "#" {
+    send "curl -I -H 'Host: instash-api.datafynow.ai' http://localhost\r"
+}
+expect "#" {
+    send "curl -I -H 'Host: instash-admin.datafynow.ai' http://localhost\r"
+}
+expect "#" {
+    send "exit\r"
+}
+expect eof
