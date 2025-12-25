@@ -269,7 +269,7 @@ export function ScrapeRuns() {
   const [scrapeRunsPage, setScrapeRunsPage] = useState(1);
   const [processingRunsPage, setProcessingRunsPage] = useState(1);
   const [activeRuns, setActiveRuns] = useState<Record<number, ActiveRun>>({});
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRunsRef = useRef<Record<number, ActiveRun>>({});
 
   // Keep ref in sync with state
