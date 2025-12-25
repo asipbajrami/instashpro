@@ -1,0 +1,443 @@
+{
+  "info": {
+    "name": "InstashPro API",
+    "description": "Laravel 12 Instagram Product Extraction API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Instagram",
+      "description": "Instagram profile and posts management",
+      "item": [
+        {
+          "name": "Upsert Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/instagram/:username/profile",
+              "host": ["{{base_url}}"],
+              "path": ["instagram", ":username", "profile"],
+              "variable": [
+                {
+                  "key": "username",
+                  "value": "celular.al",
+                  "description": "Instagram username"
+                }
+              ]
+            },
+            "description": "Fetch and store Instagram profile data"
+          }
+        },
+        {
+          "name": "Upsert Posts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/instagram/:igId/posts?count=12",
+              "host": ["{{base_url}}"],
+              "path": ["instagram", ":igId", "posts"],
+              "query": [
+                {
+                  "key": "count",
+                  "value": "12",
+                  "description": "Number of posts to fetch"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "igId",
+                  "value": "123456789",
+                  "description": "Instagram user ID (from profile)"
+                }
+              ]
+            },
+            "description": "Fetch and store Instagram posts with media"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product Processing",
+      "description": "AI-powered product extraction from posts",
+      "item": [
+        {
+          "name": "Process Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/process-products/:username?unprocessed_only=true",
+              "host": ["{{base_url}}"],
+              "path": ["process-products", ":username"],
+              "query": [
+                {
+                  "key": "unprocessed_only",
+                  "value": "true",
+                  "description": "Only process posts not yet processed"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "username",
+                  "value": "celular.al",
+                  "description": "Instagram username"
+                }
+              ]
+            },
+            "description": "Extract products from Instagram posts using LLM (OpenRouter/Gemini)"
+          }
+        },
+        {
+          "name": "Reprocess All Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/process-products/:username?unprocessed_only=false",
+              "host": ["{{base_url}}"],
+              "path": ["process-products", ":username"],
+              "query": [
+                {
+                  "key": "unprocessed_only",
+                  "value": "false",
+                  "description": "Reprocess all posts"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "username",
+                  "value": "celular.al",
+                  "description": "Instagram username"
+                }
+              ]
+            },
+            "description": "Reprocess all posts (including already processed)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products API (v1)",
+      "description": "Product listing, filtering, and search",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/products?per_page=24&sort=newest",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "products"],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "24",
+                  "description": "Items per page (max 100)"
+                },
+                {
+                  "key": "sort",
+                  "value": "newest",
+                  "description": "Sort by: newest, price_asc, price_desc"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number",
+                  "disabled": true
+                },
+                {
+                  "key": "category_id",
+                  "value": "1",
+                  "description": "Filter by category ID",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "phone",
+                  "description": "Filter by type: phone, laptop, computer, monitor, general_product",
+                  "disabled": true
+                },
+                {
+                  "key": "price_min",
+                  "value": "100",
+                  "description": "Minimum price filter",
+                  "disabled": true
+                },
+                {
+                  "key": "price_max",
+                  "value": "1000",
+                  "description": "Maximum price filter",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "List products with pagination, filtering, and facets"
+          }
+        },
+        {
+          "name": "List Products with Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/products?type=phone&filter[brand][]=Apple&filter[brand][]=Samsung&price_min=200&price_max=1500",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "products"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "phone"
+                },
+                {
+                  "key": "filter[brand][]",
+                  "value": "Apple"
+                },
+                {
+                  "key": "filter[brand][]",
+                  "value": "Samsung"
+                },
+                {
+                  "key": "price_min",
+                  "value": "200"
+                },
+                {
+                  "key": "price_max",
+                  "value": "1500"
+                }
+              ]
+            },
+            "description": "List products with attribute filters"
+          }
+        },
+        {
+          "name": "Get Product",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/products/:id",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "products", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Product ID"
+                }
+              ]
+            },
+            "description": "Get single product by ID"
+          }
+        },
+        {
+          "name": "Text Search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/products/search?q=iphone 15&per_page=24",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "products", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "iphone 15",
+                  "description": "Search query"
+                },
+                {
+                  "key": "per_page",
+                  "value": "24"
+                }
+              ]
+            },
+            "description": "Search products by text (name, description)"
+          }
+        },
+        {
+          "name": "Image/Semantic Search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/products/image-search?q=black smartphone with camera&limit=24",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "products", "image-search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "black smartphone with camera",
+                  "description": "Text description for visual search"
+                },
+                {
+                  "key": "limit",
+                  "value": "24"
+                }
+              ]
+            },
+            "description": "Semantic/visual search using CLIP embeddings"
+          }
+        },
+        {
+          "name": "Image Upload Search",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...\",\n    \"limit\": 24\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/products/image-upload-search",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "products", "image-upload-search"]
+            },
+            "description": "Search by uploading an image (base64 encoded)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories API (v1)",
+      "description": "Category tree and products by category",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/categories",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "categories"]
+            },
+            "description": "Get category tree with product counts"
+          }
+        },
+        {
+          "name": "Get Category with Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/categories/:slug?per_page=24",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "categories", ":slug"],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "24"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "phone",
+                  "description": "Category slug"
+                }
+              ]
+            },
+            "description": "Get category details with paginated products"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attributes API (v1)",
+      "description": "Product attributes for filtering",
+      "item": [
+        {
+          "name": "List Attributes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/attributes",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "attributes"]
+            },
+            "description": "Get all attributes with their values (for filter UI)"
+          }
+        }
+      ]
+    }
+  ]
+}

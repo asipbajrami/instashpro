@@ -1,0 +1,159 @@
+# InstashPro - Production Docker Compose
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: instash-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_DATABASE:-instashpro}
+      MYSQL_USER: ${DB_USERNAME:-instashpro}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-instashpro_password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - instash-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Redis (caching/queues)
+  redis:
+    image: redis:alpine
+    container_name: instash-redis
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - instash-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Typesense Search Engine
+  typesense:
+    image: typesense/typesense:26.0
+    container_name: instash-typesense
+    restart: always
+    environment:
+      - TYPESENSE_DATA_DIR=/data
+      - TYPESENSE_API_KEY=${TYPESENSE_API_KEY:-instash_typesense_key}
+    volumes:
+      - typesense_data:/data
+    networks:
+      - instash-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8108/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Laravel Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: instash-backend
+    restart: always
+    environment:
+      APP_NAME: ${APP_NAME:-InstashPro}
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY}
+      APP_URL: ${APP_URL:-http://localhost:8000}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-instashpro}
+      DB_USERNAME: ${DB_USERNAME:-instashpro}
+      DB_PASSWORD: ${DB_PASSWORD:-instashpro_password}
+      CACHE_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      SESSION_DRIVER: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      TYPESENSE_HOST: typesense
+      TYPESENSE_PORT: 8108
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-instash_typesense_key}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      ADMIN_URL: ${ADMIN_URL:-http://localhost:5173}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      typesense:
+        condition: service_healthy
+    networks:
+      - instash-network
+      - deployment-network
+    volumes:
+      - backend_storage:/var/www/html/storage/app/public
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api}
+    container_name: instash-frontend
+    restart: always
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    networks:
+      - instash-network
+      - deployment-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # React Admin Dashboard
+  admin:
+    build:
+      context: ./admin-dashboard
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
+    container_name: instash-admin
+    restart: always
+    networks:
+      - instash-network
+      - deployment-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  instash-network:
+    driver: bridge
+  deployment-network:
+    external: true
+
+volumes:
+  mysql_data:
+  redis_data:
+  typesense_data:
+  backend_storage:
+
