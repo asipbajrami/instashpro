@@ -50,7 +50,7 @@ services:
     networks:
       - instash-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8108/health"]
+      test: ["CMD-SHELL", "cat < /dev/null > /dev/tcp/localhost/8108"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -62,28 +62,84 @@ services:
       dockerfile: Dockerfile
     container_name: instash-backend
     restart: always
+    env_file:
+      - .env
     environment:
+      # App Configuration
       APP_NAME: ${APP_NAME:-InstashPro}
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${APP_KEY}
       APP_URL: ${APP_URL:-http://localhost:8000}
+      APP_LOCALE: ${APP_LOCALE:-en}
+      APP_FALLBACK_LOCALE: ${APP_FALLBACK_LOCALE:-en}
+      APP_FAKER_LOCALE: ${APP_FAKER_LOCALE:-en_US}
+      APP_MAINTENANCE_DRIVER: ${APP_MAINTENANCE_DRIVER:-file}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      
+      # Database Configuration
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
       DB_DATABASE: ${DB_DATABASE:-instashpro}
       DB_USERNAME: ${DB_USERNAME:-instashpro}
       DB_PASSWORD: ${DB_PASSWORD:-instashpro_password}
-      CACHE_DRIVER: redis
-      QUEUE_CONNECTION: redis
+      
+      # Session Configuration
       SESSION_DRIVER: redis
+      SESSION_LIFETIME: ${SESSION_LIFETIME:-120}
+      SESSION_ENCRYPT: ${SESSION_ENCRYPT:-false}
+      SESSION_PATH: ${SESSION_PATH:-/}
+      SESSION_DOMAIN: ${SESSION_DOMAIN:-null}
+      
+      # Cache & Queue Configuration
+      CACHE_DRIVER: redis
+      CACHE_STORE: ${CACHE_STORE:-redis}
+      QUEUE_CONNECTION: redis
+      BROADCAST_CONNECTION: ${BROADCAST_CONNECTION:-log}
+      FILESYSTEM_DISK: ${FILESYSTEM_DISK:-local}
+      
+      # Redis Configuration
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      
+      # Logging Configuration
+      LOG_CHANNEL: ${LOG_CHANNEL:-stack}
+      LOG_STACK: ${LOG_STACK:-single}
+      LOG_DEPRECATIONS_CHANNEL: ${LOG_DEPRECATIONS_CHANNEL:-null}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # Instagram Scraper API (RapidAPI)
+      INSTAGRAM_SCRAPER_API_KEY: ${INSTAGRAM_SCRAPER_API_KEY}
+      INSTAGRAM_SCRAPER_API_HOST: ${INSTAGRAM_SCRAPER_API_HOST:-instagram-scraper-api2.p.rapidapi.com}
+      INSTAGRAM_SCRAPER_BASE_URL: ${INSTAGRAM_SCRAPER_BASE_URL:-https://instagram-scraper-api2.p.rapidapi.com/v1.2}
+      
+      # OpenRouter API (LLM for product extraction)
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1/chat/completions}
+      OPENROUTER_DEFAULT_MODEL: ${OPENROUTER_DEFAULT_MODEL:-google/gemini-2.5-flash-preview-09-2025}
+      
+      # Typesense (Vector Search)
       TYPESENSE_HOST: typesense
       TYPESENSE_PORT: 8108
+      TYPESENSE_PROTOCOL: ${TYPESENSE_PROTOCOL:-http}
       TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-instash_typesense_key}
+      
+      # Laravel Scout
+      SCOUT_DRIVER: ${SCOUT_DRIVER:-typesense}
+      
+      # Embedding Service (LiteLLM)
+      EMBEDDING_ENABLED: ${EMBEDDING_ENABLED:-false}
+      EMBEDDING_URL: ${EMBEDDING_URL:-http://localhost:4000}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY}
+      EMBEDDING_TEXT_MODEL: ${EMBEDDING_TEXT_MODEL:-qwen3-embedding}
+      EMBEDDING_IMAGE_MODEL: ${EMBEDDING_IMAGE_MODEL:-siglip2-embedding}
+      
+      # Frontend URLs
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       ADMIN_URL: ${ADMIN_URL:-http://localhost:5173}
+      
+      # Legacy/Alternative API Keys
       OPENAI_API_KEY: ${OPENAI_API_KEY}
     depends_on:
       mysql:
