@@ -1,0 +1,15 @@
+#!/usr/bin/expect -f
+set timeout 60
+spawn ssh -o StrictHostKeyChecking=no root@5.180.149.170
+expect {
+    "*password:*" {
+        send "47kvUyH~uu5dcwjM\r"
+    }
+}
+expect "#" {
+    send "docker exec instash-backend php artisan tinker --execute=\"echo 'User count: ' . \\App\\Models\\User::count() . \\PHP_EOL; echo 'Admin User: ' . (\\App\\Models\\User::where('email', 'asip.bajrami@gmail.com')->exists() ? 'Yes' : 'No') . \\PHP_EOL;\"\r"
+}
+expect "#" {
+    send "exit\r"
+}
+expect eof
