@@ -14,11 +14,11 @@ class EmbeddingService
 
     public function __construct()
     {
-        // FIXED: Use config() exclusively
-        $this->url = config('services.embedding.url', '');
-        $this->apiKey = config('services.embedding.api_key', '');
-        $this->textModel = config('services.embedding.text_model', 'qwen3-embedding');
-        $this->imageModel = config('services.embedding.image_model', 'siglip2-embedding');
+        // Use config() with null coalescing to ensure string type
+        $this->url = config('services.embedding.url') ?? '';
+        $this->apiKey = config('services.embedding.api_key') ?? '';
+        $this->textModel = config('services.embedding.text_model') ?? 'qwen3-embedding';
+        $this->imageModel = config('services.embedding.image_model') ?? 'siglip2-embedding';
     }
 
     /**

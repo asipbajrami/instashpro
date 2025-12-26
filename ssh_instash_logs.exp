@@ -1,9 +1,0 @@
-#!/usr/bin/expect -f
-set timeout 60
-spawn ssh -o StrictHostKeyChecking=no root@5.180.149.170 "cd /home/forge/instashpro && docker compose logs --tail 50"
-expect {
-    "*password:*" {
-        send "47kvUyH~uu5dcwjM\r"
-    }
-}
-expect eof

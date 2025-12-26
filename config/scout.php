@@ -264,6 +264,37 @@ return [
                     'query_by' => 'embedding_clip'
                 ],
             ],
+
+            \App\Models\Product::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'title', 'type' => 'string'],
+                        ['name' => 'description', 'type' => 'string'],
+                        ['name' => 'brand', 'type' => 'string'],
+                        ['name' => 'model', 'type' => 'string'],
+                        ['name' => 'price', 'type' => 'float'],
+                        ['name' => 'discount_price', 'type' => 'float'],
+                        ['name' => 'has_discount', 'type' => 'bool'],
+                        ['name' => 'condition', 'type' => 'string'],
+                        ['name' => 'primary_category_id', 'type' => 'string'],
+                        ['name' => 'instagram_profile_id', 'type' => 'string'],
+                        ['name' => 'updated_at', 'type' => 'int64'],
+                        [
+                            'name' => 'embedding_title',
+                            'type' => 'float[]',
+                            'embed' => [
+                                'from' => ['title'],
+                                'model_config' => $textEmbeddingConfig,
+                            ]
+                        ],
+                    ],
+                    'default_sorting_field' => 'updated_at',
+                ],
+                'search-parameters' => [
+                    'query_by' => 'title,description,brand,model'
+                ],
+            ],
         ],
     ],
 ];

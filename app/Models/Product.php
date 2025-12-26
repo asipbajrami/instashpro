@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Laravel\Scout\Searchable;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable;
 
     protected $guarded = ['id'];
 
@@ -72,5 +73,34 @@ class Product extends Model
 
         $ids = explode('_', $this->instagram_media_ids);
         return InstagramMedia::whereIn('id', $ids)->get()->all();
+    }
+
+    /**
+     * Get the name of the index associated with the model.
+     */
+    public function searchableAs(): string
+    {
+        return 'products';
+    }
+
+    /**
+     * Get the indexable data array for the model.
+     */
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => (string) $this->id,
+            'title' => $this->title ?? '',
+            'description' => $this->description ?? '',
+            'brand' => $this->brand ?? '',
+            'model' => $this->model ?? '',
+            'price' => (float) ($this->price ?? 0),
+            'discount_price' => (float) ($this->discount_price ?? 0),
+            'has_discount' => (bool) ($this->has_discount ?? false),
+            'condition' => $this->condition ?? '',
+            'primary_category_id' => (string) ($this->primary_category_id ?? ''),
+            'instagram_profile_id' => (string) ($this->instagram_profile_id ?? ''),
+            'updated_at' => $this->updated_at?->timestamp ?? now()->timestamp,
+        ];
     }
 }

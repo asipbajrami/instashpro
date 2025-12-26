@@ -398,7 +398,7 @@ export function Header() {
               <Input
                 type="search"
                 placeholder={`Search ${currentGroup?.label.toLowerCase() || 'products'}...`}
-                className="pl-9 pr-3 h-9 w-full bg-muted/50 border-0 focus-visible:ring-1"
+                className="pl-9 pr-3 h-9 w-full bg-muted/80 dark:bg-muted/70 border-0 focus-visible:ring-1"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />

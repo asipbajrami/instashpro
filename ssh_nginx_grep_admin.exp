@@ -1,9 +1,0 @@
-#!/usr/bin/expect -f
-set timeout 30
-spawn ssh -o StrictHostKeyChecking=no root@5.180.149.170 "docker exec deployment-nginx grep instash-admin /var/log/nginx/access.log"
-expect {
-    "*password:*" {
-        send "47kvUyH~uu5dcwjM\r"
-    }
-}
-expect eof

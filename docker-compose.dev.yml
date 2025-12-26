@@ -1,0 +1,161 @@
+# InstashPro - Development Docker Compose
+# Usage: docker compose -f docker-compose.dev.yml --env-file .env.dev up
+
+services:
+  # Typesense Search Engine
+  typesense:
+    image: typesense/typesense:29.0
+    container_name: instash-typesense-dev
+    restart: unless-stopped
+    ports:
+      - "8108:8108"
+    environment:
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-xyz}
+      TYPESENSE_DATA_DIR: /data
+      TYPESENSE_ENABLE_CORS: "true"
+    volumes:
+      - typesense_data_dev:/data
+    networks:
+      - instash-dev-network
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: instash-mysql-dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: instashpro
+      MYSQL_USER: instashpro
+      MYSQL_PASSWORD: instashpro_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data_dev:/var/lib/mysql
+    networks:
+      - instash-dev-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Laravel Backend API (Development)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: instash-backend-dev
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: ${APP_NAME:-InstashPro}
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: ${APP_KEY:-}
+      APP_URL: http://localhost:8000
+
+      # Database Configuration (matches MySQL container)
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: instashpro
+      DB_USERNAME: instashpro
+      DB_PASSWORD: instashpro_password
+
+      # Cache & Queue Configuration (using database, no Redis)
+      CACHE_DRIVER: file
+      QUEUE_CONNECTION: database
+      SESSION_DRIVER: file
+
+      # Typesense Configuration
+      SCOUT_DRIVER: typesense
+      TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-xyz}
+      TYPESENSE_HOST: typesense
+      TYPESENSE_PORT: 8108
+      TYPESENSE_PROTOCOL: http
+
+      # Frontend URLs (for CORS)
+      FRONTEND_URL: http://localhost:3000
+      ADMIN_URL: http://localhost:5173
+
+      # API keys (from host .env)
+      INSTAGRAM_SCRAPER_API_KEY: ${INSTAGRAM_SCRAPER_API_KEY:-}
+      INSTAGRAM_SCRAPER_API_HOST: ${INSTAGRAM_SCRAPER_API_HOST:-instagram-scraper-api2.p.rapidapi.com}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_DEFAULT_MODEL: ${OPENROUTER_DEFAULT_MODEL:-google/gemini-2.5-flash-preview-09-2025}
+
+      # Embedding Service (LiteLLM)
+      EMBEDDING_ENABLED: ${EMBEDDING_ENABLED:-false}
+      EMBEDDING_URL: ${EMBEDDING_URL:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      LITELLM_EMBEDDING_URL: ${LITELLM_EMBEDDING_URL:-}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-}
+
+      # Set to true on first run to seed database
+      SEED_DATABASE: ${SEED_DATABASE:-false}
+    volumes:
+      # Mount source code for live editing
+      - .:/var/www/html
+      # Use named volume for vendor to prevent overwrite
+      - backend_vendor:/var/www/html/vendor
+      # Persist storage
+      - backend_storage_dev:/var/www/html/storage/app/public
+    depends_on:
+      mysql:
+        condition: service_healthy
+      typesense:
+        condition: service_started
+    networks:
+      - instash-dev-network
+
+  # Next.js Frontend (Development with hot-reload)
+  frontend:
+    image: node:22-alpine
+    container_name: instash-frontend-dev
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- -H 0.0.0.0"
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - WATCHPACK_POLLING=true
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    networks:
+      - instash-dev-network
+
+  # React Admin Dashboard (Development with hot-reload)
+  admin:
+    image: node:22-alpine
+    container_name: instash-admin-dev
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      - ./admin-dashboard:/app
+      - admin_node_modules:/app/node_modules
+    networks:
+      - instash-dev-network
+
+networks:
+  instash-dev-network:
+    driver: bridge
+
+volumes:
+  typesense_data_dev:
+  mysql_data_dev:
+  backend_vendor:
+  backend_storage_dev:
+  frontend_node_modules:
+  admin_node_modules:

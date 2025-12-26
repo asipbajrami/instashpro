@@ -1,9 +1,0 @@
-#!/usr/bin/expect -f
-set timeout 60
-spawn ssh -o StrictHostKeyChecking=no root@5.180.149.170 "docker exec instash-backend php artisan route:clear && docker exec instash-backend php artisan route:cache"
-expect {
-    "*password:*" {
-        send "47kvUyH~uu5dcwjM\r"
-    }
-}
-expect eof
