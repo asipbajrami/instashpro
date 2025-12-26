@@ -1,0 +1,30 @@
+#!/usr/bin/expect -f
+set timeout 60
+spawn ssh -o StrictHostKeyChecking=no root@5.180.149.170
+expect {
+    "*password:*" {
+        send "47kvUyH~uu5dcwjM\r"
+    }
+}
+expect "#" {
+    send "grep -q 'SANCTUM_STATEFUL_DOMAINS' /home/forge/instashpro/.env || echo 'SANCTUM_STATEFUL_DOMAINS=instash.datafynow.ai,instash-api.datafynow.ai,instash-admin.datafynow.ai' >> /home/forge/instashpro/.env\r"
+}
+expect "#" {
+    send "grep -q 'SESSION_DOMAIN' /home/forge/instashpro/.env || echo 'SESSION_DOMAIN=.datafynow.ai' >> /home/forge/instashpro/.env\r"
+}
+expect "#" {
+    send "cd /home/forge/instashpro && git pull origin main\r"
+}
+expect "#" {
+    send "cd /home/forge/instashpro && docker compose build frontend admin\r"
+}
+expect "#" {
+    send "cd /home/forge/instashpro && docker compose up -d frontend admin\r"
+}
+expect "#" {
+    send "docker exec instash-backend php artisan config:clear\r"
+}
+expect "#" {
+    send "exit\r"
+}
+expect eof

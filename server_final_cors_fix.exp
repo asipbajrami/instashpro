@@ -1,0 +1,21 @@
+#!/usr/bin/expect -f
+set timeout 60
+spawn ssh -o StrictHostKeyChecking=no root@5.180.149.170
+expect {
+    "*password:*" {
+        send "47kvUyH~uu5dcwjM\r"
+    }
+}
+expect "#" {
+    send "grep -q 'SESSION_SECURE_COOKIE' /home/forge/instashpro/.env || echo 'SESSION_SECURE_COOKIE=true' >> /home/forge/instashpro/.env\r"
+}
+expect "#" {
+    send "cd /home/forge/instashpro && git pull origin main\r"
+}
+expect "#" {
+    send "docker exec instash-backend php artisan config:clear\r"
+}
+expect "#" {
+    send "exit\r"
+}
+expect eof
