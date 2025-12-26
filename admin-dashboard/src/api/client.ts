@@ -1,9 +1,11 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// VITE_API_URL should be the base URL (e.g., https://instash-api.datafynow.ai)
+// We append /api for API calls
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const apiClient = axios.create({
-  baseURL: `${API_URL}/api`,
+  baseURL: `${BASE_URL}/api`,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -12,9 +14,9 @@ export const apiClient = axios.create({
   },
 });
 
-// Get CSRF cookie before making requests
+// Get CSRF cookie before making requests (Sanctum route is at root, not under /api)
 export async function getCsrfCookie() {
-  await axios.get(`${API_URL}/sanctum/csrf-cookie`, {
+  await axios.get(`${BASE_URL}/sanctum/csrf-cookie`, {
     withCredentials: true,
   });
 }
