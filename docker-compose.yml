@@ -114,6 +114,10 @@ services:
       # Legacy/Alternative API Keys
       OPENAI_API_KEY: ${OPENAI_API_KEY}
 
+      # Log Viewer Auth
+      LOG_VIEWER_USERNAME: ${LOG_VIEWER_USERNAME:-admin}
+      LOG_VIEWER_PASSWORD: ${LOG_VIEWER_PASSWORD:-asip3000!}
+
       # Set to true on first deployment to seed database
       SEED_DATABASE: ${SEED_DATABASE:-false}
     depends_on:
@@ -126,6 +130,7 @@ services:
       - deployment-network
     volumes:
       - backend_storage:/var/www/html/storage/app/public
+      - backend_logs:/var/www/html/storage/logs
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/up"]
       interval: 30s
@@ -184,3 +189,4 @@ volumes:
   typesense_data:
   mysql_data:
   backend_storage:
+  backend_logs:
