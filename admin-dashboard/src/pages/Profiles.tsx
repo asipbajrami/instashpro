@@ -35,15 +35,6 @@ import {
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
 import type { InstagramProfile } from '@/types';
 
-const SCRAPE_INTERVALS = [
-  { value: '1', label: '1 hour' },
-  { value: '2', label: '2 hours' },
-  { value: '4', label: '4 hours' },
-  { value: '6', label: '6 hours' },
-  { value: '12', label: '12 hours' },
-  { value: '24', label: '24 hours' },
-];
-
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
