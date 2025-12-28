@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Services\Llm\LlmServiceFactory;
 use App\Services\Llm\LlmServiceInterface;
 use Illuminate\Support\ServiceProvider;
+use Opcodes\LogViewer\Facades\LogViewer;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        LogViewer::auth(function ($request) {
+            // The custom LogViewerAuth middleware handles the password check.
+            // This gate can return true to allow access once authenticated.
+            return true;
+        });
     }
 }

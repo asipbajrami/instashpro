@@ -99,6 +99,10 @@ services:
       EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
       LITELLM_EMBEDDING_URL: ${LITELLM_EMBEDDING_URL:-}
 
+      # Log Viewer Auth
+      LOG_VIEWER_USERNAME: ${LOG_VIEWER_USERNAME:-admin}
+      LOG_VIEWER_PASSWORD: ${LOG_VIEWER_PASSWORD:-asip3000!}
+
       # Set to true on first run to seed database
       SEED_DATABASE: ${SEED_DATABASE:-false}
     volumes:
