@@ -174,6 +174,12 @@ export function Header() {
   const clearAdvancedSearch = () => {
     setAdvancedFields({ name: '', seller: '', attrValue: '' });
     setSearchQuery('');
+    router.push('/');
+  };
+
+  const closeAdvancedSearch = () => {
+    clearAdvancedSearch();
+    setAdvancedSearchOpen(false);
   };
 
   const handleGroupSwitch = (group: ProductGroup) => {
@@ -443,13 +449,13 @@ export function Header() {
               <span className="text-sm font-medium text-muted-foreground">Advanced Search</span>
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 className="h-7 text-xs"
-                onClick={clearAdvancedSearch}
+                onClick={closeAdvancedSearch}
               >
                 <X className="h-3 w-3 mr-1" />
-                Clear
+                Close
               </Button>
             </div>
             <form onSubmit={handleSearch} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -480,7 +486,16 @@ export function Header() {
                   onChange={(e) => setAdvancedFields(prev => ({ ...prev, attrValue: e.target.value }))}
                 />
               </div>
-              <div className="sm:col-span-3 flex justify-end">
+              <div className="sm:col-span-3 flex justify-end gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8"
+                  onClick={clearAdvancedSearch}
+                >
+                  Clear
+                </Button>
                 <Button type="submit" size="sm" className="h-8">
                   <Search className="h-3.5 w-3.5 mr-1.5" />
                   Search

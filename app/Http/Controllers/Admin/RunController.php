@@ -7,8 +7,10 @@ use App\Models\InstagramPost;
 use App\Models\InstagramProfile;
 use App\Models\InstagramProcessingRun;
 use App\Models\InstagramScrapeRun;
+use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RunController extends Controller
 {
@@ -214,6 +216,203 @@ class RunController extends Controller
             'data' => [
                 'run' => $run->fresh(),
             ],
+        ]);
+    }
+
+    public function skippedPostsStatus(InstagramProfile $profile): JsonResponse
+    {
+        // Get all processed posts for this profile
+        $processedPostIds = InstagramPost::where('username', $profile->username)
+            ->where('processed_structure', true)
+            ->pluck('post_id')
+            ->toArray();
+
+        if (empty($processedPostIds)) {
+            return response()->json([
+                'profile_id' => $profile->id,
+                'skipped_count' => 0,
+                'total_processed' => 0,
+            ]);
+        }
+
+        // Get post IDs that have products
+        $postsWithProducts = Product::whereIn('instagram_post_id', $processedPostIds)
+            ->distinct()
+            ->pluck('instagram_post_id')
+            ->toArray();
+
+        // Skipped posts = processed but no products
+        $skippedCount = count($processedPostIds) - count($postsWithProducts);
+
+        return response()->json([
+            'profile_id' => $profile->id,
+            'skipped_count' => max(0, $skippedCount),
+            'total_processed' => count($processedPostIds),
+            'with_products' => count($postsWithProducts),
+        ]);
+    }
+
+    public function triggerReprocessSkipped(InstagramProfile $profile): JsonResponse
+    {
+        // Get all processed posts for this profile
+        $processedPosts = InstagramPost::where('username', $profile->username)
+            ->where('processed_structure', true)
+            ->get(['id', 'post_id']);
+
+        if ($processedPosts->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No processed posts found for this profile',
+            ]);
+        }
+
+        $processedPostIds = $processedPosts->pluck('post_id')->toArray();
+
+        // Get post IDs that have products
+        $postsWithProducts = Product::whereIn('instagram_post_id', $processedPostIds)
+            ->distinct()
+            ->pluck('instagram_post_id')
+            ->toArray();
+
+        // Skipped posts = processed but no products
+        $skippedPosts = $processedPosts->filter(function ($post) use ($postsWithProducts) {
+            return !in_array($post->post_id, $postsWithProducts);
+        });
+
+        if ($skippedPosts->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No skipped posts found for this profile',
+            ]);
+        }
+
+        // Reset processed_structure for skipped posts
+        $skippedPostModelIds = $skippedPosts->pluck('id')->toArray();
+        InstagramPost::whereIn('id', $skippedPostModelIds)
+            ->update(['processed_structure' => false]);
+
+        // Create a processing run to track progress
+        $run = InstagramProcessingRun::create([
+            'instagram_profile_id' => $profile->id,
+            'username' => $profile->username,
+            'status' => 'running',
+            'posts_to_process' => count($skippedPostModelIds),
+            'posts_processed' => 0,
+            'posts_skipped' => 0,
+            'posts_failed' => 0,
+            'started_at' => now(),
+        ]);
+
+        // Dispatch jobs for each skipped post
+        foreach ($skippedPostModelIds as $postId) {
+            \App\Jobs\ProcessInstagramPost::dispatch($postId, $run->id);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Dispatched {$skippedPosts->count()} skipped posts for reprocessing.",
+            'data' => [
+                'run' => $run->fresh(),
+                'posts_queued' => $skippedPosts->count(),
+            ],
+        ]);
+    }
+
+    public function cleanupStaleRuns(): JsonResponse
+    {
+        $fixedProcessingRuns = 0;
+        $fixedScrapeRuns = 0;
+
+        // Fix processing runs that are complete but still marked as running
+        $staleProcessingRuns = InstagramProcessingRun::where('status', 'running')->get();
+        foreach ($staleProcessingRuns as $run) {
+            $totalDone = $run->posts_processed + $run->posts_failed + $run->posts_skipped;
+            if ($totalDone >= $run->posts_to_process && $run->posts_to_process > 0) {
+                $run->update([
+                    'status' => 'completed',
+                    'completed_at' => now(),
+                ]);
+                $fixedProcessingRuns++;
+            }
+        }
+
+        // Fix scrape runs that have been running for more than 30 minutes (likely stuck)
+        $staleScrapeRuns = InstagramScrapeRun::where('status', 'running')
+            ->where('started_at', '<', now()->subMinutes(30))
+            ->get();
+        foreach ($staleScrapeRuns as $run) {
+            $run->update([
+                'status' => 'failed',
+                'completed_at' => now(),
+                'error_message' => 'Auto-marked as failed: exceeded 30 minute timeout',
+            ]);
+            $fixedScrapeRuns++;
+        }
+
+        // Fix processing runs that have been running for more than 1 hour
+        $stuckProcessingRuns = InstagramProcessingRun::where('status', 'running')
+            ->where('started_at', '<', now()->subHour())
+            ->get();
+        foreach ($stuckProcessingRuns as $run) {
+            $run->update([
+                'status' => 'failed',
+                'completed_at' => now(),
+                'error_message' => 'Auto-marked as failed: exceeded 1 hour timeout',
+            ]);
+            $fixedProcessingRuns++;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Cleaned up {$fixedProcessingRuns} processing runs and {$fixedScrapeRuns} scrape runs.",
+            'data' => [
+                'fixed_processing_runs' => $fixedProcessingRuns,
+                'fixed_scrape_runs' => $fixedScrapeRuns,
+            ],
+        ]);
+    }
+
+    public function cancelProcessingRun(InstagramProcessingRun $run): JsonResponse
+    {
+        if ($run->status !== 'running') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Run is not in running status',
+            ]);
+        }
+
+        $run->update([
+            'status' => 'failed',
+            'completed_at' => now(),
+            'error_message' => 'Manually cancelled by user',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Processing run cancelled.',
+            'data' => $run->fresh(),
+        ]);
+    }
+
+    public function cancelScrapeRun(InstagramScrapeRun $run): JsonResponse
+    {
+        if ($run->status !== 'running') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Run is not in running status',
+            ]);
+        }
+
+        $run->update([
+            'status' => 'failed',
+            'completed_at' => now(),
+            'error_message' => 'Manually cancelled by user',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Scrape run cancelled.',
+            'data' => $run->fresh(),
         ]);
     }
 }

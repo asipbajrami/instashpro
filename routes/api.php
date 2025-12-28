@@ -84,12 +84,17 @@ Route::prefix('admin')->group(function () {
         // Scrape & Processing Runs
         Route::get('scrape-runs', [RunController::class, 'scrapeRuns']);
         Route::get('processing-runs', [RunController::class, 'processingRuns']);
+        Route::post('runs/cleanup', [RunController::class, 'cleanupStaleRuns']);
+        Route::post('processing-runs/{run}/cancel', [RunController::class, 'cancelProcessingRun']);
+        Route::post('scrape-runs/{run}/cancel', [RunController::class, 'cancelScrapeRun']);
         Route::get('profiles/{profile}/runs', [RunController::class, 'profileRuns']);
         Route::post('profiles/{profile}/scrape', [RunController::class, 'triggerScrape']);
         Route::post('profiles/{profile}/process', [RunController::class, 'triggerProcessing']);
         Route::post('profiles/{profile}/label', [RunController::class, 'triggerLabeling']);
         Route::post('profiles/{profile}/full-pipeline', [RunController::class, 'triggerFullPipeline']);
         Route::get('profiles/{profile}/labeling-status', [RunController::class, 'labelingStatus']);
+        Route::get('profiles/{profile}/skipped-status', [RunController::class, 'skippedPostsStatus']);
+        Route::post('profiles/{profile}/reprocess-skipped', [RunController::class, 'triggerReprocessSkipped']);
         Route::patch('profiles/{profile}/settings', [RunController::class, 'updateProfileSettings']);
     });
 });

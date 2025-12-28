@@ -121,6 +121,80 @@ export async function fetchLabelingStatus(profileId: number): Promise<LabelingSt
   return response.data;
 }
 
+export interface SkippedPostsStatus {
+  profile_id: number;
+  skipped_count: number;
+  total_processed: number;
+  with_products: number;
+}
+
+export async function fetchSkippedPostsStatus(profileId: number): Promise<SkippedPostsStatus> {
+  const response = await apiClient.get(`/admin/profiles/${profileId}/skipped-status`);
+  return response.data;
+}
+
+export function useTriggerReprocessSkipped() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (profileId: number) => {
+      const response = await apiClient.post(`/admin/profiles/${profileId}/reprocess-skipped`);
+      return response.data;
+    },
+    onSuccess: (_, profileId) => {
+      queryClient.invalidateQueries({ queryKey: ['processing-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['profile-runs', profileId] });
+      queryClient.invalidateQueries({ queryKey: ['instagram-profiles'] });
+    },
+  });
+}
+
+export function useCleanupStaleRuns() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const response = await apiClient.post('/admin/runs/cleanup');
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['scrape-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['processing-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['instagram-profiles'] });
+    },
+  });
+}
+
+export function useCancelProcessingRun() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (runId: number) => {
+      const response = await apiClient.post(`/admin/processing-runs/${runId}/cancel`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['processing-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['instagram-profiles'] });
+    },
+  });
+}
+
+export function useCancelScrapeRun() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (runId: number) => {
+      const response = await apiClient.post(`/admin/scrape-runs/${runId}/cancel`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['scrape-runs'] });
+      queryClient.invalidateQueries({ queryKey: ['instagram-profiles'] });
+    },
+  });
+}
+
 export function useUpdateProfileSettings() {
   const queryClient = useQueryClient();
 

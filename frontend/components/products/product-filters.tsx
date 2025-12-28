@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronRight, ChevronUp, RotateCcw, Search, Loader2, DollarSign, ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp, RotateCcw, Search, Loader2, DollarSign, ChevronsDownUp, ChevronsUpDown, X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Category, Facets } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -429,6 +429,24 @@ export function ProductFilters({
                 Expand
               </>
             )}
+          </Button>
+        </div>
+      )}
+
+      {/* Clear filters button */}
+      {activeFilterCount > 0 && (
+        <div className="-mx-3 px-4 sm:px-6 lg:px-8">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearFilters}
+            className="w-full h-9 text-sm border-dashed border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-foreground/50 hover:bg-muted/50"
+          >
+            <X className="h-4 w-4 mr-2" />
+            Clear all filters
+            <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+              {activeFilterCount}
+            </Badge>
           </Button>
         </div>
       )}

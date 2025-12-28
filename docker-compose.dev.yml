@@ -87,12 +87,17 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_DEFAULT_MODEL: ${OPENROUTER_DEFAULT_MODEL:-google/gemini-2.5-flash-preview-09-2025}
 
+      # LLM Provider Selection ('openrouter' or 'litellm')
+      LLM_PROVIDER: ${LLM_PROVIDER:-openrouter}
+      LITELLM_API_KEY: ${LITELLM_API_KEY:-}
+      LITELLM_BASE_URL: ${LITELLM_BASE_URL:-}
+      LITELLM_DEFAULT_MODEL: ${LITELLM_DEFAULT_MODEL:-}
+
       # Embedding Service (LiteLLM)
       EMBEDDING_ENABLED: ${EMBEDDING_ENABLED:-false}
       EMBEDDING_URL: ${EMBEDDING_URL:-}
       EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
       LITELLM_EMBEDDING_URL: ${LITELLM_EMBEDDING_URL:-}
-      LITELLM_API_KEY: ${LITELLM_API_KEY:-}
 
       # Set to true on first run to seed database
       SEED_DATABASE: ${SEED_DATABASE:-false}

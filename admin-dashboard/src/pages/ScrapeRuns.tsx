@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useScrapeRuns, useProcessingRuns, useTriggerScrape, useTriggerProcessing, useTriggerLabeling, useTriggerFullPipeline, useUpdateProfileSettings, fetchLabelingStatus } from '@/api/runs';
+import { useScrapeRuns, useProcessingRuns, useTriggerScrape, useTriggerProcessing, useTriggerLabeling, useTriggerFullPipeline, useUpdateProfileSettings, useTriggerReprocessSkipped, useCleanupStaleRuns, useCancelProcessingRun, useCancelScrapeRun, fetchLabelingStatus, fetchSkippedPostsStatus } from '@/api/runs';
 import { useProfiles } from '@/api/profiles';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { Play, RefreshCw, Cpu, Settings2, Check, Tag, Zap } from 'lucide-react';
+import { Play, RefreshCw, Cpu, Settings2, Check, Tag, Zap, RotateCcw, X, Trash2 } from 'lucide-react';
 import type { InstagramScrapeRun, InstagramProcessingRun, InstagramProfile } from '@/types';
 
 function formatDate(dateString: string | null) {
@@ -63,7 +63,7 @@ function TypeBadge({ type }: { type: string }) {
 }
 
 interface ActiveRun {
-  type: 'scrape' | 'process' | 'label' | 'full_pipeline';
+  type: 'scrape' | 'process' | 'label' | 'full_pipeline' | 'reprocess_skipped';
   status: 'running' | 'completed' | 'failed';
   progress?: string;
   initialCount?: number; // For labeling: initial count of posts to label
@@ -75,26 +75,32 @@ function ProfileRow({
   onProcess,
   onLabel,
   onFullPipeline,
+  onReprocessSkipped,
   onUpdateSettings,
   isScraping,
   isProcessing,
   isLabeling,
   isFullPipelining,
+  isReprocessingSkipped,
   isUpdating,
   activeRun,
+  skippedCount,
 }: {
   profile: InstagramProfile;
   onScrape: () => void;
   onProcess: () => void;
   onLabel: () => void;
   onFullPipeline: () => void;
+  onReprocessSkipped: () => void;
   onUpdateSettings: (postsPerRequest: number) => void;
   isScraping: boolean;
   isProcessing: boolean;
   isLabeling: boolean;
   isFullPipelining: boolean;
+  isReprocessingSkipped: boolean;
   isUpdating: boolean;
   activeRun?: ActiveRun;
+  skippedCount?: number;
 }) {
   const [editingPosts, setEditingPosts] = useState(false);
   const [postsValue, setPostsValue] = useState(profile.posts_per_request.toString());
@@ -109,7 +115,8 @@ function ProfileRow({
   const isProcessRunning = activeRun?.type === 'process' && activeRun.status === 'running';
   const isLabelRunning = activeRun?.type === 'label' && activeRun.status === 'running';
   const isFullPipelineRunning = activeRun?.type === 'full_pipeline' && activeRun.status === 'running';
-  const isAnyRunning = isScrapeRunning || isProcessRunning || isLabelRunning || isFullPipelineRunning;
+  const isReprocessSkippedRunning = activeRun?.type === 'reprocess_skipped' && activeRun.status === 'running';
+  const isAnyRunning = isScrapeRunning || isProcessRunning || isLabelRunning || isFullPipelineRunning || isReprocessSkippedRunning;
 
   return (
     <TableRow>
@@ -258,6 +265,28 @@ function ProfileRow({
               </>
             )}
           </Button>
+          {(skippedCount !== undefined && skippedCount > 0) && (
+            <Button
+              size="sm"
+              variant={isReprocessSkippedRunning ? 'secondary' : 'outline'}
+              onClick={onReprocessSkipped}
+              disabled={isReprocessingSkipped || isAnyRunning}
+              className="h-8"
+              title={`Reprocess ${skippedCount} skipped posts (processed but no products found)`}
+            >
+              {isReprocessSkippedRunning ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  {activeRun?.progress || 'Reprocessing...'}
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Retry ({skippedCount})
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </TableCell>
     </TableRow>
@@ -269,6 +298,7 @@ export function ScrapeRuns() {
   const [scrapeRunsPage, setScrapeRunsPage] = useState(1);
   const [processingRunsPage, setProcessingRunsPage] = useState(1);
   const [activeRuns, setActiveRuns] = useState<Record<number, ActiveRun>>({});
+  const [skippedCounts, setSkippedCounts] = useState<Record<number, number>>({});
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRunsRef = useRef<Record<number, ActiveRun>>({});
 
@@ -284,6 +314,10 @@ export function ScrapeRuns() {
   const triggerProcessingMutation = useTriggerProcessing();
   const triggerLabelingMutation = useTriggerLabeling();
   const triggerFullPipelineMutation = useTriggerFullPipeline();
+  const triggerReprocessSkippedMutation = useTriggerReprocessSkipped();
+  const cleanupStaleRunsMutation = useCleanupStaleRuns();
+  const cancelProcessingRunMutation = useCancelProcessingRun();
+  const cancelScrapeRunMutation = useCancelScrapeRun();
   const updateSettingsMutation = useUpdateProfileSettings();
 
   // Check for running jobs and update status
@@ -464,6 +498,76 @@ export function ScrapeRuns() {
     }
   };
 
+  const handleTriggerReprocessSkipped = async (profileId: number) => {
+    try {
+      const result = await triggerReprocessSkippedMutation.mutateAsync(profileId);
+      const total = result.data?.posts_queued || 0;
+      setActiveRuns(prev => ({
+        ...prev,
+        [profileId]: { type: 'reprocess_skipped', status: 'running', progress: `0/${total}` }
+      }));
+      // Clear the skipped count since we're reprocessing
+      setSkippedCounts(prev => ({ ...prev, [profileId]: 0 }));
+      refetchProcessing();
+    } catch (error) {
+      console.error('Reprocess skipped failed:', error);
+    }
+  };
+
+  // Fetch skipped counts for all profiles
+  useEffect(() => {
+    const fetchSkippedCounts = async () => {
+      if (!profiles?.data) return;
+
+      const counts: Record<number, number> = {};
+      for (const profile of profiles.data) {
+        try {
+          const status = await fetchSkippedPostsStatus(profile.id);
+          counts[profile.id] = status.skipped_count;
+        } catch (error) {
+          console.error(`Failed to fetch skipped status for profile ${profile.id}:`, error);
+        }
+      }
+      setSkippedCounts(counts);
+    };
+
+    fetchSkippedCounts();
+  }, [profiles]);
+
+  const handleCleanupStaleRuns = async () => {
+    try {
+      await cleanupStaleRunsMutation.mutateAsync();
+      refetchScrape();
+      refetchProcessing();
+      // Clear active runs since cleanup may have changed statuses
+      setActiveRuns({});
+    } catch (error) {
+      console.error('Cleanup failed:', error);
+    }
+  };
+
+  const handleCancelScrapeRun = async (runId: number) => {
+    try {
+      await cancelScrapeRunMutation.mutateAsync(runId);
+      refetchScrape();
+      // Clear active run for this profile
+      setActiveRuns({});
+    } catch (error) {
+      console.error('Cancel scrape run failed:', error);
+    }
+  };
+
+  const handleCancelProcessingRun = async (runId: number) => {
+    try {
+      await cancelProcessingRunMutation.mutateAsync(runId);
+      refetchProcessing();
+      // Clear active run for this profile
+      setActiveRuns({});
+    } catch (error) {
+      console.error('Cancel processing run failed:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -473,17 +577,33 @@ export function ScrapeRuns() {
             Manage Instagram scraping and product processing
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => {
-            refetchProfiles();
-            refetchScrape();
-            refetchProcessing();
-          }}
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCleanupStaleRuns}
+            disabled={cleanupStaleRunsMutation.isPending}
+            title="Fix stuck runs that show as running but are actually complete or timed out"
+          >
+            {cleanupStaleRunsMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4 mr-1" />
+            )}
+            Cleanup Stuck
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              refetchProfiles();
+              refetchScrape();
+              refetchProcessing();
+            }}
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="profiles" className="w-full">
@@ -519,13 +639,16 @@ export function ScrapeRuns() {
                     onProcess={() => handleTriggerProcessing(profile.id)}
                     onLabel={() => handleTriggerLabeling(profile.id)}
                     onFullPipeline={() => handleTriggerFullPipeline(profile.id)}
+                    onReprocessSkipped={() => handleTriggerReprocessSkipped(profile.id)}
                     onUpdateSettings={(value) => handleUpdateSettings(profile.id, value)}
                     isScraping={triggerScrapeMutation.isPending}
                     isProcessing={triggerProcessingMutation.isPending}
                     isLabeling={triggerLabelingMutation.isPending}
                     isFullPipelining={triggerFullPipelineMutation.isPending}
+                    isReprocessingSkipped={triggerReprocessSkippedMutation.isPending}
                     isUpdating={updateSettingsMutation.isPending}
                     activeRun={activeRuns[profile.id]}
+                    skippedCount={skippedCounts[profile.id]}
                   />
                 ))}
                 {profiles?.data?.length === 0 && (
@@ -580,6 +703,7 @@ export function ScrapeRuns() {
                     <TableHead>Skipped</TableHead>
                     <TableHead>Has More</TableHead>
                     <TableHead>Started</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -612,11 +736,26 @@ export function ScrapeRuns() {
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(run.started_at)}
                       </TableCell>
+                      <TableCell>
+                        {run.status === 'running' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleCancelScrapeRun(run.id)}
+                            disabled={cancelScrapeRunMutation.isPending}
+                            title="Cancel this run"
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            Cancel
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                   {scrapeRunsData?.data?.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                         No scrape runs found.
                       </TableCell>
                     </TableRow>
@@ -690,6 +829,7 @@ export function ScrapeRuns() {
                     <TableHead>Failed</TableHead>
                     <TableHead>Skipped</TableHead>
                     <TableHead>Started</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -708,11 +848,26 @@ export function ScrapeRuns() {
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(run.started_at)}
                       </TableCell>
+                      <TableCell>
+                        {run.status === 'running' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleCancelProcessingRun(run.id)}
+                            disabled={cancelProcessingRunMutation.isPending}
+                            title="Cancel this run"
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            Cancel
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                   {processingRunsData?.data?.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                         No processing runs found.
                       </TableCell>
                     </TableRow>

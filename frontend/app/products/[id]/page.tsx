@@ -167,13 +167,13 @@ export default function ProductPage({ params }: ProductPageProps) {
           {product.images.length > 0 ? (
             <>
               {/* Main Carousel */}
-              <Carousel setApi={setApi} className="w-full max-w-xl mx-auto">
+              <Carousel setApi={setApi} className="w-full max-w-lg">
                 <CarouselContent>
                   {product.images.map((image, index) => (
                     <CarouselItem key={image.id}>
                       <button
                         onClick={() => openModal(index)}
-                        className="relative aspect-square w-full bg-muted rounded-lg overflow-hidden cursor-zoom-in group"
+                        className="relative aspect-4/5 w-full bg-muted rounded-lg overflow-hidden cursor-zoom-in group"
                       >
                         <Image
                           src={
@@ -215,13 +215,13 @@ export default function ProductPage({ params }: ProductPageProps) {
                     align: 'start',
                     dragFree: true,
                   }}
-                  className="w-full"
+                  className="w-full max-w-lg"
                 >
                   <CarouselContent className="-ml-2">
                     {product.images.map((image, index) => (
                       <CarouselItem
                         key={image.id}
-                        className="basis-1/5 pl-2 cursor-pointer"
+                        className="basis-1/6 pl-2 cursor-pointer"
                       >
                         <button
                           onClick={() => onThumbClick(index)}
@@ -365,7 +365,7 @@ export default function ProductPage({ params }: ProductPageProps) {
       {/* Fullscreen Image Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent
-          className="p-0 bg-black/40 backdrop-blur-xl border-none shadow-2xl w-screen h-screen sm:w-[95vw] sm:h-[95vh] sm:max-h-[95vh] sm:max-w-7xl lg:max-w-[90vw] flex flex-col items-stretch outline-none rounded-none sm:rounded-2xl overflow-hidden m-0 sm:m-4"
+          className="p-0 bg-black/40 backdrop-blur-xl border-none shadow-2xl w-[99.5vw] max-w-[99.5vw] h-[99vh] max-h-[99vh] flex flex-col items-stretch outline-none rounded-none sm:rounded-2xl overflow-hidden m-0"
           showCloseButton={false}
         >
           <VisuallyHidden>
@@ -373,7 +373,7 @@ export default function ProductPage({ params }: ProductPageProps) {
           </VisuallyHidden>
 
           {/* Header area for counter and buttons */}
-          <div className="w-full flex items-center justify-between p-2.5 sm:p-4 border-b border-white/5 shrink-0">
+          <div className="w-full flex items-center justify-between p-1.5 sm:p-2.5 border-b border-white/5 shrink-0">
             {/* Image counter */}
             <div className="text-white text-[10px] sm:text-xs font-semibold bg-white/10 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full backdrop-blur-md border border-white/10">
               {modalIndex + 1} / {product.images.length}
@@ -415,7 +415,7 @@ export default function ProductPage({ params }: ProductPageProps) {
           </div>
 
           {/* Modal Carousel */}
-          <div className="relative w-full px-1 py-1 sm:px-6 sm:py-4 lg:px-8 lg:py-6 flex items-center justify-center flex-1 min-h-0 overflow-hidden">
+          <div className="relative w-full px-1 py-1 sm:px-2 sm:py-2 flex items-center justify-center flex-1 min-h-0 overflow-hidden">
             <Carousel
               setApi={setModalApi}
               opts={{ startIndex: modalIndex }}
@@ -424,19 +424,17 @@ export default function ProductPage({ params }: ProductPageProps) {
               <CarouselContent className="ml-0 h-full">
                 {product.images.map((image, index) => (
                   <CarouselItem key={image.id} className="pl-0 h-full">
-                    <div className="relative w-full h-full flex items-center justify-center p-2">
-                      <div className="relative w-full h-full min-h-[400px] sm:min-h-[500px] lg:min-h-[600px]">
-                        <Image
+                    <div className="relative w-full h-full flex items-center justify-center p-0.5 sm:p-1">
+                      <div className="relative w-full h-full flex items-center justify-center">
+                        <img
                           src={
                             image.url.startsWith('/')
                               ? `http://localhost:8000${image.url}`
                               : image.url
                           }
                           alt={`${product.name} - Image ${index + 1}`}
-                          fill
-                          className="object-contain"
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 93vw, 88vw"
-                          priority
+                          className="object-contain w-full h-full"
+                          style={{ maxWidth: '100%', maxHeight: '100%' }}
                         />
                       </div>
                     </div>
@@ -452,37 +450,35 @@ export default function ProductPage({ params }: ProductPageProps) {
             </Carousel>
           </div>
 
-          {/* Modal Thumbnails */}
-          {product.images.length > 1 && (
-            <div className="w-full bg-white/5 backdrop-blur-xl py-3 sm:py-4 px-3 sm:px-6 border-t border-white/10 shrink-0">
-              <div className="flex gap-2 sm:gap-3 justify-start sm:justify-center items-center overflow-x-auto scrollbar-hide pb-1 sm:pb-2">
-                {product.images.map((image, index) => (
-                  <button
-                    key={image.id}
-                    onClick={() => modalApi?.scrollTo(index)}
-                    type="button"
-                    className={`relative shrink-0 aspect-square w-12 sm:w-16 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
-                      index === modalIndex
-                        ? 'border-white scale-110 shadow-2xl shadow-white/10'
-                        : 'border-white/10 hover:border-white/40 hover:scale-105'
-                    }`}
-                  >
-                    <Image
-                      src={
-                        image.url.startsWith('/')
-                          ? `http://localhost:8000${image.url}`
-                          : image.url
-                      }
-                      alt={`Thumbnail ${index + 1}`}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 48px, 64px"
-                    />
-                  </button>
-                ))}
-              </div>
+          {/* Modal Thumbnails - Always rendered to maintain consistent spacing */}
+          <div className={`w-full bg-white/5 backdrop-blur-xl py-1 sm:py-1.5 px-2 sm:px-4 border-t border-white/10 shrink-0 ${product.images.length > 1 ? '' : 'invisible'}`}>
+            <div className="flex gap-1 sm:gap-1.5 justify-start sm:justify-center items-center overflow-x-auto overflow-y-visible scrollbar-hide pb-0.5 sm:pb-1 pt-1 sm:pt-1.5">
+              {product.images.map((image, index) => (
+                <button
+                  key={image.id}
+                  onClick={() => modalApi?.scrollTo(index)}
+                  type="button"
+                  className={`relative shrink-0 aspect-square w-16 sm:w-20 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+                    index === modalIndex
+                      ? 'border-white scale-110 shadow-2xl shadow-white/10'
+                      : 'border-white/10 hover:border-white/40 hover:scale-105'
+                  }`}
+                >
+                  <Image
+                    src={
+                      image.url.startsWith('/')
+                        ? `http://localhost:8000${image.url}`
+                        : image.url
+                    }
+                    alt={`Thumbnail ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 48px, 64px"
+                  />
+                </button>
+              ))}
             </div>
-          )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
@@ -495,10 +491,10 @@ function ProductPageSkeleton() {
       <Skeleton className="h-6 w-64 mb-6" />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-4">
-          <Skeleton className="aspect-square w-full rounded-lg" />
-          <div className="flex gap-2">
+          <Skeleton className="aspect-4/5 w-full max-w-lg rounded-lg" />
+          <div className="flex gap-2 max-w-lg">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="w-20 h-20 rounded-md" />
+              <Skeleton key={i} className="w-16 h-16 rounded-md" />
             ))}
           </div>
         </div>
