@@ -92,7 +92,7 @@ class StructureOutput extends Model
                                     ],
                                     'price' => [
                                         'type' => 'number',
-                                        'description' => 'ORIGINAL/REGULAR price (the HIGHER value). Often shown crossed out when discounted. Use 0 if no price mentioned. When two prices exist, this is ALWAYS the higher one.'
+                                        'description' => 'ORIGINAL/REGULAR price (the HIGHER value). Often shown crossed out when discounted. When two prices exist, this is ALWAYS the higher one.'
                                     ],
                                     'discount_price' => [
                                         'type' => 'number',
