@@ -242,31 +242,38 @@ function HomeContent() {
       <main className="flex-1 flex flex-col min-w-0">
         <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
           {/* Mobile header */}
-          <div className="flex items-center justify-between mb-4 lg:hidden">
-            <div className="flex items-center gap-2">
-              <LayoutGrid className="h-5 w-5 text-muted-foreground" />
-              <span className="font-medium">
-                {pagination ? `${pagination.total} Products` : 'Products'}
-              </span>
+          <div className="flex flex-col gap-2 mb-4 lg:hidden">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <LayoutGrid className="h-5 w-5 text-muted-foreground" />
+                <span className="font-medium">
+                  {pagination ? `${pagination.total} Products` : 'Products'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 px-1">
+                <Select value={filters.sort || 'newest'} onValueChange={handleSortChange}>
+                  <SelectTrigger className="w-[130px] h-9">
+                    <ArrowUpDown className="h-4 w-4 mr-1" />
+                    <SelectValue placeholder="Sort" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
+                    <SelectItem value="price_asc">Price ↑</SelectItem>
+                    <SelectItem value="price_desc">Price ↓</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FilterSheet
+                  filters={filters}
+                  onFiltersChange={updateFilters}
+                  facets={facets}
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-2 px-1">
-              <Select value={filters.sort || 'newest'} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-[130px] h-9">
-                  <ArrowUpDown className="h-4 w-4 mr-1" />
-                  <SelectValue placeholder="Sort" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest</SelectItem>
-                  <SelectItem value="oldest">Oldest</SelectItem>
-                  <SelectItem value="price_asc">Price ↑</SelectItem>
-                  <SelectItem value="price_desc">Price ↓</SelectItem>
-                </SelectContent>
-              </Select>
-              <FilterSheet
-                filters={filters}
-                onFiltersChange={updateFilters}
-                facets={facets}
-              />
+            <div className="bg-muted/30 border rounded-lg py-1.5 px-3 text-center">
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight leading-tight">
+                Data are being collected by AI. Mistakes may be made, please check the Instagram post for better info.
+              </p>
             </div>
           </div>
 
@@ -306,6 +313,13 @@ function HomeContent() {
                 </div>
               )}
             </div>
+
+            <div className="flex-1 flex justify-center px-4">
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight opacity-70">
+                Data are being collected by AI. Mistakes may be made, please check the Instagram post for better info.
+              </p>
+            </div>
+
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Sort by:</span>
               <Select value={filters.sort || 'newest'} onValueChange={handleSortChange}>
