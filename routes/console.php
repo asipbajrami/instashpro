@@ -8,5 +8,5 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Run full pipeline for profiles due for scraping (checks every hour)
-Schedule::command('scrape:run-due')->hourly();
+// Run full pipeline for profiles due for scraping (checks every minute to match exact scheduled times)
+Schedule::command('scrape:run-due')->everyMinute();

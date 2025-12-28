@@ -48,10 +48,10 @@ class RunDueScrapes extends Command
             // Dispatch the full pipeline job
             FullPipelineJob::dispatch($profile->id, $run->id);
 
-            // Update next_scrape_at for this profile
+            // Update next_scrape_at for this profile based on its schedule
             $profile->update([
                 'last_scraped_at' => now(),
-                'next_scrape_at' => now()->addHours($profile->scrape_interval_hours ?? 24),
+                'next_scrape_at' => $profile->getNextScheduledAt(),
             ]);
 
             $this->info("  ✓ Dispatched pipeline for {$profile->username}");

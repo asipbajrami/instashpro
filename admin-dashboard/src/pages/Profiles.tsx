@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, X } from 'lucide-react';
 import type { InstagramProfile } from '@/types';
 
 const SCRAPE_INTERVALS = [
@@ -61,7 +61,10 @@ export function Profiles() {
     username: '',
     scrape_interval_hours: '24',
     status: 'active',
+    scheduled_times: ['13:00', '17:00', '20:00'],
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
+  const [newTime, setNewTime] = useState('12:00');
 
   const { data, isLoading } = useProfiles({
     search: search || undefined,
@@ -77,9 +80,17 @@ export function Profiles() {
       username: formData.username,
       scrape_interval_hours: Number(formData.scrape_interval_hours),
       status: formData.status,
+      scheduled_times: formData.scheduled_times,
+      timezone: formData.timezone,
     });
     setIsCreateOpen(false);
-    setFormData({ username: '', scrape_interval_hours: '24', status: 'active' });
+    setFormData({ 
+      username: '', 
+      scrape_interval_hours: '24', 
+      status: 'active',
+      scheduled_times: ['13:00', '17:00', '20:00'],
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
   };
 
   const handleEdit = (profile: InstagramProfile) => {
@@ -88,6 +99,8 @@ export function Profiles() {
       username: profile.username,
       scrape_interval_hours: String(profile.scrape_interval_hours),
       status: profile.status,
+      scheduled_times: profile.scheduled_times || ['13:00', '17:00', '20:00'],
+      timezone: profile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
     setIsEditOpen(true);
   };
@@ -98,9 +111,27 @@ export function Profiles() {
       id: selectedProfile.id,
       scrape_interval_hours: Number(formData.scrape_interval_hours),
       status: formData.status,
+      scheduled_times: formData.scheduled_times,
+      timezone: formData.timezone,
     });
     setIsEditOpen(false);
     setSelectedProfile(null);
+  };
+
+  const removeTime = (timeToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      scheduled_times: prev.scheduled_times.filter(t => t !== timeToRemove)
+    }));
+  };
+
+  const addTime = () => {
+    if (!formData.scheduled_times.includes(newTime)) {
+      setFormData(prev => ({
+        ...prev,
+        scheduled_times: [...prev.scheduled_times, newTime].sort()
+      }));
+    }
   };
 
   const handleDelete = async () => {
@@ -166,7 +197,7 @@ export function Profiles() {
               <TableHead>Username</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Followers</TableHead>
-              <TableHead>Scrape Interval</TableHead>
+              <TableHead>Schedule (Daily)</TableHead>
               <TableHead>Last Scraped</TableHead>
               <TableHead>Next Scrape</TableHead>
               <TableHead className="w-24">Actions</TableHead>
@@ -178,7 +209,18 @@ export function Profiles() {
                 <TableCell className="font-medium">@{profile.username}</TableCell>
                 <TableCell>{getStatusBadge(profile.status)}</TableCell>
                 <TableCell>{profile.follower_count.toLocaleString()}</TableCell>
-                <TableCell>{profile.scrape_interval_hours}h</TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {(profile.scheduled_times || ['13:00', '17:00', '20:00']).map(time => (
+                      <Badge key={time} variant="outline" className="text-[10px] px-1 py-0">
+                        {time}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="text-[9px] text-muted-foreground mt-1">
+                    {profile.timezone}
+                  </div>
+                </TableCell>
                 <TableCell>
                   {profile.last_scraped_at
                     ? new Date(profile.last_scraped_at).toLocaleString()
@@ -238,24 +280,40 @@ export function Profiles() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Scrape Interval</Label>
-              <Select
-                value={formData.scrape_interval_hours}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, scrape_interval_hours: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SCRAPE_INTERVALS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Scraping Schedule</Label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {formData.scheduled_times.map((time) => (
+                  <Badge key={time} variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+                    {time}
+                    <button 
+                      type="button"
+                      onClick={() => removeTime(time)}
+                      className="hover:text-destructive rounded-full"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="time"
+                  value={newTime}
+                  onChange={(e) => setNewTime(e.target.value)}
+                  className="w-32"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={addTime}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add Time
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Set specific times throughout the day for scraping (Timezone: {formData.timezone}).
+              </p>
             </div>
           </div>
           <DialogFooter>
@@ -300,24 +358,40 @@ export function Profiles() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Scrape Interval</Label>
-              <Select
-                value={formData.scrape_interval_hours}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, scrape_interval_hours: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SCRAPE_INTERVALS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Scraping Schedule</Label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {formData.scheduled_times.map((time) => (
+                  <Badge key={time} variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1">
+                    {time}
+                    <button 
+                      type="button"
+                      onClick={() => removeTime(time)}
+                      className="hover:text-destructive rounded-full"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="time"
+                  value={newTime}
+                  onChange={(e) => setNewTime(e.target.value)}
+                  className="w-32"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={addTime}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add Time
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Set specific times throughout the day for scraping (Timezone: {formData.timezone}).
+              </p>
             </div>
           </div>
           <DialogFooter>

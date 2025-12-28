@@ -40,7 +40,13 @@ export function useCreateProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { username: string; scrape_interval_hours?: number; status?: string }) => {
+    mutationFn: async (data: { 
+      username: string; 
+      scrape_interval_hours?: number; 
+      scheduled_times?: string[];
+      timezone?: string;
+      status?: string 
+    }) => {
       const response = await apiClient.post('/admin/instagram-profiles', data);
       return response.data;
     },
@@ -54,7 +60,14 @@ export function useUpdateProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...data }: { id: number; username?: string; scrape_interval_hours?: number; status?: string }) => {
+    mutationFn: async ({ id, ...data }: { 
+      id: number; 
+      username?: string; 
+      scrape_interval_hours?: number; 
+      scheduled_times?: string[];
+      timezone?: string;
+      status?: string 
+    }) => {
       const response = await apiClient.put(`/admin/instagram-profiles/${id}`, data);
       return response.data;
     },

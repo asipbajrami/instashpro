@@ -34,6 +34,7 @@ class ProductAttributeSeeder extends Seeder
             ['name' => 'Processor', 'type' => 'select', 'slug' => 'processor', 'attribute_group' => 'tech-electronics'],
             ['name' => 'Graphics', 'type' => 'select', 'slug' => 'graphics', 'attribute_group' => 'tech-electronics'],
             ['name' => 'Gifts', 'type' => 'select', 'slug' => 'gifts', 'attribute_group' => 'tech-electronics'],
+            ['name' => 'Credit', 'type' => 'text', 'slug' => 'credit', 'attribute_group' => 'tech-electronics'],
         ];
 
         // Monitors specific attributes (category slug: 'monitors')

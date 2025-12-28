@@ -23,6 +23,8 @@ export interface InstagramProfile {
   initial_scrape_at: string | null;
   posts_per_request: number;
   scrape_interval_hours: number;
+  scheduled_times: string[];
+  timezone: string;
   last_scraped_at: string | null;
   next_scrape_at: string | null;
   coverage_percentage?: number;

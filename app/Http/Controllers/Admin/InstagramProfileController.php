@@ -37,6 +37,9 @@ class InstagramProfileController extends Controller
         $validated = $request->validate([
             'username' => 'required|string|unique:instagram_profiles,username',
             'scrape_interval_hours' => 'integer|in:1,2,4,6,12,24',
+            'scheduled_times' => 'array',
+            'scheduled_times.*' => 'string|regex:/^[0-9]{1,2}:[0-9]{2}$/',
+            'timezone' => 'string',
             'status' => 'string|in:active,inactive,suspended',
         ]);
 
@@ -63,8 +66,13 @@ class InstagramProfileController extends Controller
                 'category' => $igData['category'] ?? null,
                 'pronouns' => $igData['pronouns'] ?? [],
                 'scrape_interval_hours' => $validated['scrape_interval_hours'] ?? 24,
+                'scheduled_times' => $validated['scheduled_times'] ?? InstagramProfile::DEFAULT_SCHEDULED_TIMES,
+                'timezone' => $validated['timezone'] ?? 'UTC',
                 'status' => $validated['status'] ?? 'active',
             ]);
+
+            // Set initial next_scrape_at
+            $profile->update(['next_scrape_at' => $profile->getNextScheduledAt()]);
 
             return response()->json([
                 'success' => true,
@@ -78,8 +86,13 @@ class InstagramProfileController extends Controller
                 'username' => $validated['username'],
                 'ig_id' => '',
                 'scrape_interval_hours' => $validated['scrape_interval_hours'] ?? 24,
+                'scheduled_times' => $validated['scheduled_times'] ?? InstagramProfile::DEFAULT_SCHEDULED_TIMES,
+                'timezone' => $validated['timezone'] ?? 'UTC',
                 'status' => $validated['status'] ?? 'active',
             ]);
+
+            // Set initial next_scrape_at
+            $profile->update(['next_scrape_at' => $profile->getNextScheduledAt()]);
 
             return response()->json([
                 'success' => true,
@@ -102,16 +115,17 @@ class InstagramProfileController extends Controller
                 Rule::unique('instagram_profiles')->ignore($instagramProfile->id),
             ],
             'scrape_interval_hours' => 'integer|in:1,2,4,6,12,24',
+            'scheduled_times' => 'array',
+            'scheduled_times.*' => 'string|regex:/^[0-9]{1,2}:[0-9]{2}$/',
+            'timezone' => 'string',
             'status' => 'string|in:active,inactive,suspended',
         ]);
 
         $instagramProfile->update($validated);
 
-        if (isset($validated['scrape_interval_hours'])) {
+        if (isset($validated['scheduled_times']) || isset($validated['scrape_interval_hours']) || isset($validated['timezone'])) {
             $instagramProfile->update([
-                'next_scrape_at' => $instagramProfile->last_scraped_at
-                    ? $instagramProfile->last_scraped_at->addHours($validated['scrape_interval_hours'])
-                    : now(),
+                'next_scrape_at' => $instagramProfile->getNextScheduledAt(),
             ]);
         }
 

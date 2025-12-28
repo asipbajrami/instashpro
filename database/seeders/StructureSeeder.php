@@ -79,6 +79,7 @@ class StructureSeeder extends Seeder
             ['key' => 'battery', 'description' => 'Battery capacity (3000mAh, 4500mAh, 5000mAh)', 'slug' => 'battery'],
             ['key' => 'warranty', 'description' => 'Warranty (1 year, 2 years, AppleCare+)', 'slug' => 'warranty'],
             ['key' => 'gifts', 'description' => 'Included gifts or accessories with product', 'slug' => 'gifts'],
+            ['key' => 'credit', 'description' => 'Credit purchase information (e.g., Jute credit 3999lek/month)', 'slug' => 'credit'],
         ];
 
         $this->createAttributes($attributes, 'phone', 'tech');
@@ -99,6 +100,7 @@ class StructureSeeder extends Seeder
             ['key' => 'battery', 'description' => 'Battery life (10 hours, 15 hours, 22 hours)', 'slug' => 'battery'],
             ['key' => 'warranty', 'description' => 'Warranty (1 year, 3 years, AppleCare+)', 'slug' => 'warranty'],
             ['key' => 'gifts', 'description' => 'Included gifts or accessories with product', 'slug' => 'gifts'],
+            ['key' => 'credit', 'description' => 'Credit purchase information (e.g., Jute credit 3999lek/month)', 'slug' => 'credit'],
         ];
 
         $this->createAttributes($attributes, 'computer', 'tech');
@@ -118,6 +120,7 @@ class StructureSeeder extends Seeder
             ['key' => 'connectivity', 'description' => 'Inputs (HDMI 2.1, DisplayPort 1.4, USB-C, Thunderbolt)', 'slug' => 'connectivity'],
             ['key' => 'warranty', 'description' => 'Warranty (1 year, 3 years, 5 years)', 'slug' => 'warranty'],
             ['key' => 'gifts', 'description' => 'Included gifts or accessories with product', 'slug' => 'gifts'],
+            ['key' => 'credit', 'description' => 'Credit purchase information (e.g., Jute credit 3999lek/month)', 'slug' => 'credit'],
         ];
 
         $this->createAttributes($attributes, 'display', 'tech');
