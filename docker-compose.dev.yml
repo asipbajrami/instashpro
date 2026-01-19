@@ -103,6 +103,12 @@ services:
       LOG_VIEWER_USERNAME: ${LOG_VIEWER_USERNAME:-admin}
       LOG_VIEWER_PASSWORD: ${LOG_VIEWER_PASSWORD:-asip3000!}
 
+      # Axiom Logging
+      LOG_CHANNEL: stack
+      LOG_STACK: ${LOG_STACK:-single}
+      AXIOM_API_TOKEN: ${AXIOM_API_TOKEN:-}
+      AXIOM_DATASET: ${AXIOM_DATASET:-instashpro}
+
       # Set to true on first run to seed database
       SEED_DATABASE: ${SEED_DATABASE:-false}
     volumes:

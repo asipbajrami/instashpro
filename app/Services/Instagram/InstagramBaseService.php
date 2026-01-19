@@ -26,6 +26,15 @@ class InstagramBaseService
 
     protected function makeRequest(string $endpoint, string $method = 'GET', array $params = []): array
     {
+        $startTime = microtime(true);
+        $username = $params['username'] ?? $params['username_or_id'] ?? null;
+
+        Log::info('Instagram API request', [
+            'api.endpoint' => $endpoint,
+            'api.method' => $method,
+            'profile.username' => $username,
+        ]);
+
         try {
             $response = Http::timeout(120)
                 ->connectTimeout(30)
@@ -34,20 +43,35 @@ class InstagramBaseService
                     'x-rapidapi-key' => $this->apiKey,
                 ])->get($this->baseUrl . $endpoint, $params);
 
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
             if (!$response->successful()) {
-                Log::error("Instagram API error", [
-                    'endpoint' => $endpoint,
-                    'status' => $response->status(),
-                    'body' => $response->body(),
+                Log::error('Instagram API failed', [
+                    'api.endpoint' => $endpoint,
+                    'profile.username' => $username,
+                    'response.status' => $response->status(),
+                    'error.message' => $response->body(),
+                    'duration.ms' => $durationMs,
                 ]);
                 throw new RuntimeException("Instagram API request failed: " . $response->status());
             }
 
+            Log::info('Instagram API response', [
+                'api.endpoint' => $endpoint,
+                'profile.username' => $username,
+                'response.status' => $response->status(),
+                'duration.ms' => $durationMs,
+            ]);
+
             return $response->json();
         } catch (\Exception $e) {
-            Log::error("Instagram API request error", [
-                'endpoint' => $endpoint,
-                'error' => $e->getMessage(),
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+            Log::error('Instagram API exception', [
+                'api.endpoint' => $endpoint,
+                'profile.username' => $username,
+                'error.type' => get_class($e),
+                'error.message' => $e->getMessage(),
+                'duration.ms' => $durationMs,
             ]);
             throw $e;
         }

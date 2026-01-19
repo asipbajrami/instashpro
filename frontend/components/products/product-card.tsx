@@ -12,10 +12,17 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const primaryImage = product.images.find((img) => img.is_primary) || product.images[0];
-  const hasDiscount = product.discount_price && parseFloat(product.discount_price) > 0;
-  const price = parseFloat(product.price);
-  const discountPrice = hasDiscount ? parseFloat(product.discount_price) : null;
-  const discountPercent = hasDiscount ? Math.round(((price - (discountPrice || 0)) / price) * 100) : 0;
+  const rawPrice = parseFloat(product.price) || 0;
+  const rawDiscountPrice = product.discount_price ? parseFloat(product.discount_price) : null;
+
+  // Normalize: if price is 0 but discount_price exists, use discount_price as the actual price
+  const price = rawPrice > 0 ? rawPrice : (rawDiscountPrice || 0);
+  const discountPrice = rawPrice > 0 ? rawDiscountPrice : null;
+
+  const hasDiscount = discountPrice && discountPrice > 0 && price > discountPrice;
+  const discountPercent = hasDiscount && price > 0
+    ? Math.round(((price - discountPrice) / price) * 100)
+    : 0;
   const currency = product.currency || 'ALL';
 
   return (

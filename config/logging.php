@@ -1,5 +1,7 @@
 <?php
 
+use App\Logging\Handlers\AxiomHandler;
+use App\Logging\Handlers\AxiomQueuedHandler;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -125,6 +127,27 @@ return [
 
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
+        ],
+
+        'axiom' => [
+            'driver' => 'monolog',
+            'handler' => AxiomHandler::class,
+            'level' => env('LOG_LEVEL', 'debug'),
+            'with' => [
+                'apiToken' => env('AXIOM_API_TOKEN'),
+                'dataset' => env('AXIOM_DATASET', 'instashpro'),
+            ],
+        ],
+
+        // Batched version - sends all logs at end of request (recommended for production)
+        'axiom-batched' => [
+            'driver' => 'monolog',
+            'handler' => AxiomQueuedHandler::class,
+            'level' => env('LOG_LEVEL', 'debug'),
+            'with' => [
+                'apiToken' => env('AXIOM_API_TOKEN'),
+                'dataset' => env('AXIOM_DATASET', 'instashpro'),
+            ],
         ],
 
     ],

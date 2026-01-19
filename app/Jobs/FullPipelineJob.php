@@ -42,29 +42,78 @@ class FullPipelineJob implements ShouldQueue
         LlmServiceInterface $llmService,
         ProductProcessorController $productProcessor
     ): void {
+        $pipelineStart = microtime(true);
         $profile = InstagramProfile::find($this->profileId);
         $scrapeRun = InstagramScrapeRun::find($this->scrapeRunId);
 
         if (!$profile || !$scrapeRun) {
-            Log::warning("FullPipelineJob: Profile {$this->profileId} or Run {$this->scrapeRunId} not found");
+            Log::warning('Pipeline profile not found', [
+                'job.type' => 'full_pipeline',
+                'profile.id' => $this->profileId,
+                'run.id' => $this->scrapeRunId,
+            ]);
             return;
         }
 
+        Log::info('Pipeline started', [
+            'job.type' => 'full_pipeline',
+            'profile.id' => $this->profileId,
+            'profile.username' => $profile->username,
+            'run.id' => $this->scrapeRunId,
+        ]);
+
         try {
             // Step 1: Scrape
-            Log::info("FullPipelineJob: [1/3] SCRAPE starting for {$profile->username}");
+            $phaseStart = microtime(true);
             $scrapeRun->update(['error_message' => 'Step 1/3: Scraping...']);
-            $this->runScrape($profile, $scrapeRun, $postService, $instagramController);
+            $scrapeStats = $this->runScrape($profile, $scrapeRun, $postService, $instagramController);
+            $scrapeMs = round((microtime(true) - $phaseStart) * 1000);
+
+            Log::info('Pipeline phase completed', [
+                'job.type' => 'full_pipeline',
+                'profile.id' => $this->profileId,
+                'profile.username' => $profile->username,
+                'phase' => 'scrape',
+                'posts.fetched' => $scrapeStats['fetched'],
+                'posts.new' => $scrapeStats['new'],
+                'posts.skipped' => $scrapeStats['skipped'],
+                'duration.ms' => $scrapeMs,
+            ]);
 
             // Step 2: Label
-            Log::info("FullPipelineJob: [2/3] LABEL starting for {$profile->username}");
+            $phaseStart = microtime(true);
             $scrapeRun->update(['error_message' => 'Step 2/3: Labeling...']);
-            $this->runLabeling($profile, $llmService);
+            $labelStats = $this->runLabeling($profile, $llmService);
+            $labelMs = round((microtime(true) - $phaseStart) * 1000);
+
+            Log::info('Pipeline phase completed', [
+                'job.type' => 'full_pipeline',
+                'profile.id' => $this->profileId,
+                'profile.username' => $profile->username,
+                'phase' => 'label',
+                'posts.total' => $labelStats['total'],
+                'posts.labeled' => $labelStats['labeled'],
+                'posts.errors' => $labelStats['errors'],
+                'duration.ms' => $labelMs,
+            ]);
 
             // Step 3: Process
-            Log::info("FullPipelineJob: [3/3] PROCESS starting for {$profile->username}");
+            $phaseStart = microtime(true);
             $scrapeRun->update(['error_message' => 'Step 3/3: Processing...']);
-            $this->runProcessing($profile, $productProcessor);
+            $processStats = $this->runProcessing($profile, $productProcessor);
+            $processMs = round((microtime(true) - $phaseStart) * 1000);
+
+            Log::info('Pipeline phase completed', [
+                'job.type' => 'full_pipeline',
+                'profile.id' => $this->profileId,
+                'profile.username' => $profile->username,
+                'phase' => 'process',
+                'posts.total' => $processStats['total'],
+                'posts.processed' => $processStats['processed'],
+                'posts.skipped' => $processStats['skipped'],
+                'posts.failed' => $processStats['failed'],
+                'duration.ms' => $processMs,
+            ]);
 
             // Mark complete
             $scrapeRun->update([
@@ -73,12 +122,33 @@ class FullPipelineJob implements ShouldQueue
                 'completed_at' => now(),
             ]);
 
-            Log::info("FullPipelineJob: COMPLETED full pipeline for {$profile->username}");
+            $totalMs = round((microtime(true) - $pipelineStart) * 1000);
+
+            Log::info('Pipeline completed', [
+                'job.type' => 'full_pipeline',
+                'profile.id' => $this->profileId,
+                'profile.username' => $profile->username,
+                'run.id' => $this->scrapeRunId,
+                'posts.scraped' => $scrapeStats['new'],
+                'posts.labeled' => $labelStats['labeled'],
+                'posts.processed' => $processStats['processed'],
+                'duration.total_ms' => $totalMs,
+                'duration.scrape_ms' => $scrapeMs,
+                'duration.label_ms' => $labelMs,
+                'duration.process_ms' => $processMs,
+            ]);
 
         } catch (Exception $e) {
-            Log::error("FullPipelineJob: Failed for {$profile->username}", [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            $totalMs = round((microtime(true) - $pipelineStart) * 1000);
+
+            Log::error('Pipeline failed', [
+                'job.type' => 'full_pipeline',
+                'profile.id' => $this->profileId,
+                'profile.username' => $profile->username,
+                'run.id' => $this->scrapeRunId,
+                'error.type' => get_class($e),
+                'error.message' => $e->getMessage(),
+                'duration.ms' => $totalMs,
             ]);
 
             $scrapeRun->update([
@@ -96,7 +166,7 @@ class FullPipelineJob implements ShouldQueue
         InstagramScrapeRun $run,
         InstagramPostService $postService,
         InstagramController $instagramController
-    ): void {
+    ): array {
         $isFirstScrape = !$profile->initial_scrape_done;
 
         $limit = $profile->posts_per_request ?? 12;
@@ -124,9 +194,11 @@ class FullPipelineJob implements ShouldQueue
                 ]));
                 $postsNew++;
             } catch (Exception $e) {
-                Log::error("FullPipelineJob: Failed to save post", [
-                    'shortcode' => $shortcode,
-                    'error' => $e->getMessage(),
+                Log::error('Post save failed', [
+                    'job.type' => 'full_pipeline',
+                    'profile.username' => $profile->username,
+                    'post.shortcode' => $shortcode,
+                    'error.message' => $e->getMessage(),
                 ]);
             }
         }
@@ -141,6 +213,9 @@ class FullPipelineJob implements ShouldQueue
 
         $profile->updateLocalPostCount();
 
+        // Always update last_scraped_at
+        $profile->update(['last_scraped_at' => now()]);
+
         if ($isFirstScrape) {
             $profile->update([
                 'initial_scrape_done' => true,
@@ -148,21 +223,23 @@ class FullPipelineJob implements ShouldQueue
             ]);
         }
 
-        Log::info("FullPipelineJob: Scrape completed", [
-            'posts_fetched' => $postsFetched,
-            'posts_new' => $postsNew,
-        ]);
+        return [
+            'fetched' => $postsFetched,
+            'new' => $postsNew,
+            'skipped' => $postsSkipped,
+        ];
     }
 
-    private function runLabeling(InstagramProfile $profile, LlmServiceInterface $llmService): void
+    private function runLabeling(InstagramProfile $profile, LlmServiceInterface $llmService): array
     {
         $posts = InstagramPost::where('username', $profile->username)
             ->whereNull('used_for')
             ->get();
 
+        $total = $posts->count();
+
         if ($posts->isEmpty()) {
-            Log::info("FullPipelineJob: No posts to label for {$profile->username}");
-            return;
+            return ['total' => 0, 'labeled' => 0, 'errors' => 0];
         }
 
         $labeled = 0;
@@ -189,24 +266,28 @@ class FullPipelineJob implements ShouldQueue
                 $labeled++;
             } catch (Exception $e) {
                 $errors++;
-                Log::error("FullPipelineJob: Failed to label post {$post->id}", [
-                    'error' => $e->getMessage(),
+                Log::error('Post labeling failed', [
+                    'job.type' => 'full_pipeline',
+                    'profile.username' => $profile->username,
+                    'post.id' => $post->id,
+                    'error.message' => $e->getMessage(),
                 ]);
             }
         }
 
-        Log::info("FullPipelineJob: Labeled {$labeled}/{$posts->count()} posts for {$profile->username} (errors: {$errors})");
+        return ['total' => $total, 'labeled' => $labeled, 'errors' => $errors];
     }
 
-    private function runProcessing(InstagramProfile $profile, ProductProcessorController $productProcessor): void
+    private function runProcessing(InstagramProfile $profile, ProductProcessorController $productProcessor): array
     {
         $posts = InstagramPost::where('username', $profile->username)
             ->where('processed_structure', false)
             ->get();
 
+        $total = $posts->count();
+
         if ($posts->isEmpty()) {
-            Log::info("FullPipelineJob: No posts to process for {$profile->username}");
-            return;
+            return ['total' => 0, 'processed' => 0, 'skipped' => 0, 'failed' => 0];
         }
 
         // Create processing run for tracking
@@ -214,7 +295,7 @@ class FullPipelineJob implements ShouldQueue
             'instagram_profile_id' => $profile->id,
             'username' => $profile->username,
             'status' => 'running',
-            'posts_to_process' => $posts->count(),
+            'posts_to_process' => $total,
             'posts_processed' => 0,
             'posts_skipped' => 0,
             'posts_failed' => 0,
@@ -250,8 +331,11 @@ class FullPipelineJob implements ShouldQueue
             } catch (Exception $e) {
                 $failed++;
                 $run->update(['posts_failed' => $failed]);
-                Log::error("FullPipelineJob: Failed to process post {$post->id}", [
-                    'error' => $e->getMessage(),
+                Log::error('Post processing failed', [
+                    'job.type' => 'full_pipeline',
+                    'profile.username' => $profile->username,
+                    'post.id' => $post->id,
+                    'error.message' => $e->getMessage(),
                 ]);
             }
         }
@@ -261,13 +345,17 @@ class FullPipelineJob implements ShouldQueue
             'completed_at' => now(),
         ]);
 
-        Log::info("FullPipelineJob: Processed {$processed}/{$posts->count()} posts (skipped: {$skipped}, failed: {$failed})");
+        return ['total' => $total, 'processed' => $processed, 'skipped' => $skipped, 'failed' => $failed];
     }
 
     public function failed(Exception $exception): void
     {
-        Log::error("FullPipelineJob: Job failed for profile {$this->profileId}", [
-            'error' => $exception->getMessage()
+        Log::error('Pipeline job failed (all retries exhausted)', [
+            'job.type' => 'full_pipeline',
+            'profile.id' => $this->profileId,
+            'run.id' => $this->scrapeRunId,
+            'error.type' => get_class($exception),
+            'error.message' => $exception->getMessage(),
         ]);
 
         $run = InstagramScrapeRun::find($this->scrapeRunId);

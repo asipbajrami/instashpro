@@ -4,6 +4,7 @@ namespace App\Services\Search;
 
 use App\Services\EmbeddingService;
 use Exception;
+use Illuminate\Support\Facades\Log;
 use Typesense\Client;
 
 class TypesenseService
@@ -45,6 +46,7 @@ class TypesenseService
             return [];
         }
 
+        $startTime = microtime(true);
         $embedding = $this->embeddingService->getClipTextEmbedding($text);
 
         if (!$embedding) {
@@ -80,8 +82,29 @@ class TypesenseService
                 }
             }
 
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
+            Log::info('Search executed', [
+                'search.type' => 'image_by_text',
+                'search.collection' => 'instagram_media',
+                'search.post_id' => $instagramPostId,
+                'search.limit' => $limit,
+                'results.count' => count($results),
+                'duration.ms' => $durationMs,
+            ]);
+
             return $results;
         } catch (Exception $e) {
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
+            Log::error('Search failed', [
+                'search.type' => 'image_by_text',
+                'search.collection' => 'instagram_media',
+                'search.post_id' => $instagramPostId,
+                'error.message' => $e->getMessage(),
+                'duration.ms' => $durationMs,
+            ]);
+
             throw new Exception('Typesense image search failed: ' . $e->getMessage());
         }
     }
@@ -95,6 +118,7 @@ class TypesenseService
         int $limit = 10,
         ?bool $isTemp = null
     ): array {
+        $startTime = microtime(true);
         $filterBy = "product_attribute_id:=$productAttributeId";
 
         if ($isTemp !== null) {
@@ -103,6 +127,7 @@ class TypesenseService
         }
 
         $embedding = $this->embeddingService->getTextEmbedding($query);
+        $searchMode = $embedding ? 'hybrid' : 'text_only';
 
         if (!$embedding) {
             // Fall back to text-only search
@@ -117,10 +142,35 @@ class TypesenseService
             ];
 
             try {
-                return $this->client->collections['product_attribute_values']
+                $result = $this->client->collections['product_attribute_values']
                     ->documents
                     ->search($searchParameters);
+
+                $durationMs = round((microtime(true) - $startTime) * 1000);
+
+                Log::info('Search executed', [
+                    'search.type' => 'attribute_values',
+                    'search.mode' => $searchMode,
+                    'search.collection' => 'product_attribute_values',
+                    'search.attribute_id' => $productAttributeId,
+                    'search.limit' => $limit,
+                    'results.count' => count($result['hits'] ?? []),
+                    'duration.ms' => $durationMs,
+                ]);
+
+                return $result;
             } catch (Exception $e) {
+                $durationMs = round((microtime(true) - $startTime) * 1000);
+
+                Log::error('Search failed', [
+                    'search.type' => 'attribute_values',
+                    'search.mode' => $searchMode,
+                    'search.collection' => 'product_attribute_values',
+                    'search.attribute_id' => $productAttributeId,
+                    'error.message' => $e->getMessage(),
+                    'duration.ms' => $durationMs,
+                ]);
+
                 throw new Exception('Typesense search failed: ' . $e->getMessage());
             }
         }
@@ -145,8 +195,33 @@ class TypesenseService
 
         try {
             $searchResults = $this->client->multiSearch->perform($searchParameters);
-            return $searchResults['results'][0] ?? ['hits' => []];
+            $result = $searchResults['results'][0] ?? ['hits' => []];
+
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
+            Log::info('Search executed', [
+                'search.type' => 'attribute_values',
+                'search.mode' => $searchMode,
+                'search.collection' => 'product_attribute_values',
+                'search.attribute_id' => $productAttributeId,
+                'search.limit' => $limit,
+                'results.count' => count($result['hits'] ?? []),
+                'duration.ms' => $durationMs,
+            ]);
+
+            return $result;
         } catch (Exception $e) {
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
+            Log::error('Search failed', [
+                'search.type' => 'attribute_values',
+                'search.mode' => $searchMode,
+                'search.collection' => 'product_attribute_values',
+                'search.attribute_id' => $productAttributeId,
+                'error.message' => $e->getMessage(),
+                'duration.ms' => $durationMs,
+            ]);
+
             throw new Exception('Typesense search failed: ' . $e->getMessage());
         }
     }
@@ -161,6 +236,8 @@ class TypesenseService
             return ['hits' => []];
         }
 
+        $startTime = microtime(true);
+
         // Use Typesense's built-in embedding model for semantic search
         // This automatically embeds the query using ts/multilingual-e5-large
         $searchParameters = [
@@ -171,10 +248,31 @@ class TypesenseService
         ];
 
         try {
-            return $this->client->collections['category']
+            $result = $this->client->collections['category']
                 ->documents
                 ->search($searchParameters);
+
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
+            Log::info('Search executed', [
+                'search.type' => 'category',
+                'search.collection' => 'category',
+                'search.limit' => $limit,
+                'results.count' => count($result['hits'] ?? []),
+                'duration.ms' => $durationMs,
+            ]);
+
+            return $result;
         } catch (Exception $e) {
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
+            Log::error('Search failed', [
+                'search.type' => 'category',
+                'search.collection' => 'category',
+                'error.message' => $e->getMessage(),
+                'duration.ms' => $durationMs,
+            ]);
+
             throw new Exception('Typesense category search failed: ' . $e->getMessage());
         }
     }
@@ -193,6 +291,7 @@ class TypesenseService
         ?string $base64Image = null,
         string $defaultGroup = 'general'
     ): string {
+        $startTime = microtime(true);
         $hasCaption = !empty(trim($caption ?? ''));
         $hasImage = !empty($base64Image);
 
@@ -246,6 +345,18 @@ class TypesenseService
             }
 
             if (empty($groupScores)) {
+                $durationMs = round((microtime(true) - $startTime) * 1000);
+
+                Log::info('Search executed', [
+                    'search.type' => 'structure_output_group',
+                    'search.collection' => 'structure_output_groups',
+                    'search.has_caption' => $hasCaption,
+                    'search.has_image' => $hasImage,
+                    'result.group' => $defaultGroup,
+                    'result.matched' => false,
+                    'duration.ms' => $durationMs,
+                ]);
+
                 return $defaultGroup;
             }
 
@@ -259,13 +370,35 @@ class TypesenseService
             // Both sources: score > 1.3 (combined)
             $threshold = ($hasCaption && $hasImage) ? 1.3 : 0.66;
 
-            if ($bestScore >= $threshold) {
-                return $bestGroup;
-            }
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+            $matched = $bestScore >= $threshold;
+            $resultGroup = $matched ? $bestGroup : $defaultGroup;
 
-            return $defaultGroup;
+            Log::info('Search executed', [
+                'search.type' => 'structure_output_group',
+                'search.collection' => 'structure_output_groups',
+                'search.has_caption' => $hasCaption,
+                'search.has_image' => $hasImage,
+                'result.group' => $resultGroup,
+                'result.matched' => $matched,
+                'result.score' => $bestScore,
+                'result.threshold' => $threshold,
+                'duration.ms' => $durationMs,
+            ]);
+
+            return $resultGroup;
         } catch (Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Structure output group search failed: ' . $e->getMessage());
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
+            Log::error('Search failed', [
+                'search.type' => 'structure_output_group',
+                'search.collection' => 'structure_output_groups',
+                'search.has_caption' => $hasCaption,
+                'search.has_image' => $hasImage,
+                'error.message' => $e->getMessage(),
+                'duration.ms' => $durationMs,
+            ]);
+
             return $defaultGroup;
         }
     }

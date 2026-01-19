@@ -116,7 +116,8 @@ class ProductProcessorController extends Controller
         }
 
         // Determine structure output group using caption and first image
-        $group = $this->determineStructureOutputGroup($post->caption, $validImages);
+        $classificationResult = $this->determineStructureOutputGroup($post->caption, $validImages);
+        $group = $classificationResult['category'];
 
         $post->update(['used_for' => $group]);
 
@@ -225,19 +226,22 @@ class ProductProcessorController extends Controller
         }
 
         // Determine structure output group using caption and first image
-        $group = $this->determineStructureOutputGroup($post->caption, $validImages);
+        $classificationResult = $this->determineStructureOutputGroup($post->caption, $validImages);
+        $group = $classificationResult['category'];
+        $classificationMetadata = $classificationResult['_metadata'];
 
         // Extract products using LLM with retry logic
         $extraction = null;
         $lastError = null;
+        $extractionAttempts = 0;
 
         for ($attempt = 1; $attempt <= self::MAX_RETRIES; $attempt++) {
+            $extractionAttempts = $attempt;
             try {
                 $extraction = $this->llmService->extractProducts($validImages, $post->caption, $group);
                 break;
             } catch (Exception $e) {
                 $lastError = $e;
-                Log::warning("LLM extraction attempt {$attempt}/" . self::MAX_RETRIES . " failed for post {$post->id}: " . $e->getMessage());
                 if ($attempt < self::MAX_RETRIES) {
                     sleep(1);
                 }
@@ -249,6 +253,7 @@ class ProductProcessorController extends Controller
         }
 
         $imageMap = $extraction['image_map'] ?? [];
+        $extractionMetadata = $extraction['_metadata'] ?? [];
 
         // Update post with group (tech/car) and extracted categories
         $post->update([
@@ -263,7 +268,12 @@ class ProductProcessorController extends Controller
                 'post_id' => $post->id,
                 'shortcode' => $post->shortcode,
                 'reason' => 'No products detected',
-                'group' => $group
+                'group' => $group,
+                '_llm_metadata' => [
+                    'classification' => $classificationMetadata,
+                    'extraction' => $extractionMetadata,
+                    'extraction_attempts' => $extractionAttempts,
+                ],
             ];
         }
 
@@ -314,33 +324,35 @@ class ProductProcessorController extends Controller
             'post_type' => $extraction['post_type'] ?? null,
             'products_created' => count($createdProducts),
             'products_skipped_low_confidence' => $skippedLowConfidence,
-            'products' => $createdProducts
+            'products' => $createdProducts,
+            '_llm_metadata' => [
+                'classification' => $classificationMetadata,
+                'extraction' => $extractionMetadata,
+                'extraction_attempts' => $extractionAttempts,
+            ],
         ];
     }
 
     /**
-     * Determine the best structure output group for a post using Gemma 3 4B LLM
+     * Determine the best structure output group for a post using LLM
      * Uses caption text and optionally first image for classification
+     *
+     * @return array{category: string, _metadata: array}
      */
-    private function determineStructureOutputGroup(?string $caption, array $validImages): string
+    private function determineStructureOutputGroup(?string $caption, array $validImages): array
     {
-        try {
-            // Get base64 image from first valid image
-            $base64Image = null;
-            if (!empty($validImages)) {
-                $firstImagePath = $validImages[0]['path'];
-                $imageContent = Storage::disk('public')->get($firstImagePath);
-                if ($imageContent) {
-                    $base64Image = base64_encode($imageContent);
-                }
+        // Get base64 image from first valid image
+        $base64Image = null;
+        if (!empty($validImages)) {
+            $firstImagePath = $validImages[0]['path'];
+            $imageContent = Storage::disk('public')->get($firstImagePath);
+            if ($imageContent) {
+                $base64Image = base64_encode($imageContent);
             }
-
-            // Classify using LLM service
-            return $this->llmService->classifyPostCategory($caption, $base64Image, 'tech');
-        } catch (Exception $e) {
-            Log::warning("Failed to determine structure output group: " . $e->getMessage());
-            return 'tech'; // Default to tech group on error
         }
+
+        // Classify using LLM service (returns array with category and _metadata)
+        return $this->llmService->classifyPostCategory($caption, $base64Image, 'tech');
     }
 
     private function getPostMedia(InstagramPost $post)

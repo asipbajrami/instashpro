@@ -39,6 +39,9 @@ class EmbeddingService
             return null;
         }
 
+        $startTime = microtime(true);
+        $inputSize = strlen($base64Image);
+
         try {
             $response = Http::timeout(30)
                 ->withHeaders([
@@ -50,15 +53,39 @@ class EmbeddingService
                     'input' => 'data:image/jpeg;base64,' . $base64Image,
                 ]);
 
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
             if ($response->successful()) {
                 $data = $response->json();
-                return $data['data'][0]['embedding'] ?? null;
+                $embedding = $data['data'][0]['embedding'] ?? null;
+
+                Log::info('Embedding generated', [
+                    'embedding.type' => 'image',
+                    'embedding.model' => $this->imageModel,
+                    'input.size_bytes' => $inputSize,
+                    'embedding.dimensions' => $embedding ? count($embedding) : 0,
+                    'duration.ms' => $durationMs,
+                ]);
+
+                return $embedding;
             }
 
-            Log::error('Image embedding failed: ' . $response->body());
+            Log::error('Embedding failed', [
+                'embedding.type' => 'image',
+                'embedding.model' => $this->imageModel,
+                'error.message' => $response->body(),
+                'duration.ms' => $durationMs,
+            ]);
             return null;
         } catch (\Exception $e) {
-            Log::error('Image embedding error: ' . $e->getMessage());
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+            Log::error('Embedding exception', [
+                'embedding.type' => 'image',
+                'embedding.model' => $this->imageModel,
+                'error.type' => get_class($e),
+                'error.message' => $e->getMessage(),
+                'duration.ms' => $durationMs,
+            ]);
             return null;
         }
     }
@@ -73,9 +100,13 @@ class EmbeddingService
             return null;
         }
 
+        $startTime = microtime(true);
+        $originalWordCount = count(preg_split('/\s+/', trim($text)));
+
         // SigLIP2 has max 64 tokens - truncate to ~20 words to stay within limit
         $words = preg_split('/\s+/', trim($text));
-        if (count($words) > 20) {
+        $truncated = count($words) > 20;
+        if ($truncated) {
             $text = implode(' ', array_slice($words, 0, 20));
         }
 
@@ -90,15 +121,40 @@ class EmbeddingService
                     'input' => $text,
                 ]);
 
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
             if ($response->successful()) {
                 $data = $response->json();
-                return $data['data'][0]['embedding'] ?? null;
+                $embedding = $data['data'][0]['embedding'] ?? null;
+
+                Log::info('Embedding generated', [
+                    'embedding.type' => 'clip_text',
+                    'embedding.model' => $this->imageModel,
+                    'input.word_count' => $originalWordCount,
+                    'input.truncated' => $truncated,
+                    'embedding.dimensions' => $embedding ? count($embedding) : 0,
+                    'duration.ms' => $durationMs,
+                ]);
+
+                return $embedding;
             }
 
-            Log::error('CLIP text embedding failed: ' . $response->body());
+            Log::error('Embedding failed', [
+                'embedding.type' => 'clip_text',
+                'embedding.model' => $this->imageModel,
+                'error.message' => $response->body(),
+                'duration.ms' => $durationMs,
+            ]);
             return null;
         } catch (\Exception $e) {
-            Log::error('CLIP text embedding error: ' . $e->getMessage());
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+            Log::error('Embedding exception', [
+                'embedding.type' => 'clip_text',
+                'embedding.model' => $this->imageModel,
+                'error.type' => get_class($e),
+                'error.message' => $e->getMessage(),
+                'duration.ms' => $durationMs,
+            ]);
             return null;
         }
     }
@@ -112,6 +168,9 @@ class EmbeddingService
             return null;
         }
 
+        $startTime = microtime(true);
+        $inputLength = strlen($text);
+
         try {
             $response = Http::timeout(30)
                 ->withHeaders([
@@ -123,15 +182,39 @@ class EmbeddingService
                     'input' => $text,
                 ]);
 
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
             if ($response->successful()) {
                 $data = $response->json();
-                return $data['data'][0]['embedding'] ?? null;
+                $embedding = $data['data'][0]['embedding'] ?? null;
+
+                Log::info('Embedding generated', [
+                    'embedding.type' => 'text',
+                    'embedding.model' => $this->textModel,
+                    'input.length' => $inputLength,
+                    'embedding.dimensions' => $embedding ? count($embedding) : 0,
+                    'duration.ms' => $durationMs,
+                ]);
+
+                return $embedding;
             }
 
-            Log::error('Text embedding failed: ' . $response->body());
+            Log::error('Embedding failed', [
+                'embedding.type' => 'text',
+                'embedding.model' => $this->textModel,
+                'error.message' => $response->body(),
+                'duration.ms' => $durationMs,
+            ]);
             return null;
         } catch (\Exception $e) {
-            Log::error('Text embedding error: ' . $e->getMessage());
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+            Log::error('Embedding exception', [
+                'embedding.type' => 'text',
+                'embedding.model' => $this->textModel,
+                'error.type' => get_class($e),
+                'error.message' => $e->getMessage(),
+                'duration.ms' => $durationMs,
+            ]);
             return null;
         }
     }

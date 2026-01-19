@@ -11,6 +11,7 @@ use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RunController extends Controller
 {
@@ -91,6 +92,14 @@ class RunController extends Controller
         // Dispatch job for background processing
         \App\Jobs\ScrapeInstagramProfile::dispatch($profile->id, $run->id);
 
+        Log::info('Job triggered', [
+            'job.type' => 'scrape',
+            'profile.id' => $profile->id,
+            'profile.username' => $profile->username,
+            'run.id' => $run->id,
+            'admin.id' => auth()->id(),
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Scrape job dispatched for background processing.',
@@ -145,6 +154,15 @@ class RunController extends Controller
             \App\Jobs\ProcessInstagramPost::dispatch($post->id, $run->id);
         }
 
+        Log::info('Job triggered', [
+            'job.type' => 'process',
+            'profile.id' => $profile->id,
+            'profile.username' => $profile->username,
+            'run.id' => $run->id,
+            'posts.count' => $posts->count(),
+            'admin.id' => auth()->id(),
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => "Dispatched {$posts->count()} posts for background processing. Run 'php artisan queue:work' to process.",
@@ -171,6 +189,14 @@ class RunController extends Controller
 
         // Dispatch job for background processing
         \App\Jobs\LabelInstagramPosts::dispatch($profile->id);
+
+        Log::info('Job triggered', [
+            'job.type' => 'label',
+            'profile.id' => $profile->id,
+            'profile.username' => $profile->username,
+            'posts.count' => $postsToLabel,
+            'admin.id' => auth()->id(),
+        ]);
 
         return response()->json([
             'success' => true,
@@ -209,6 +235,14 @@ class RunController extends Controller
 
         // Dispatch the full pipeline job
         \App\Jobs\FullPipelineJob::dispatch($profile->id, $run->id);
+
+        Log::info('Job triggered', [
+            'job.type' => 'full_pipeline',
+            'profile.id' => $profile->id,
+            'profile.username' => $profile->username,
+            'run.id' => $run->id,
+            'admin.id' => auth()->id(),
+        ]);
 
         return response()->json([
             'success' => true,

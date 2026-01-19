@@ -32,10 +32,20 @@ class ProcessInstagramPost implements ShouldQueue
 
     public function handle(ProductProcessorController $processor): void
     {
+        $startTime = microtime(true);
         $post = InstagramPost::find($this->postId);
 
         if (!$post) {
-            Log::warning("ProcessInstagramPost: Post {$this->postId} not found");
+            Log::warning('Post processing skipped - post not found', [
+                // Job context
+                'job.type' => 'process_post',
+                'post.id' => $this->postId,
+                'run.id' => $this->runId,
+
+                // Result
+                'status' => 'failed',
+                'skip.reason' => 'post_not_found',
+            ]);
             $this->updateRunStats('failed');
             return;
         }
@@ -54,20 +64,113 @@ class ProcessInstagramPost implements ShouldQueue
                 });
             });
 
+            $durationMs = (int) round((microtime(true) - $startTime) * 1000);
+
+            // Build wide event with all context
+            $llmMetadata = $result['_llm_metadata'] ?? [];
+            $classificationMeta = $llmMetadata['classification'] ?? [];
+            $extractionMeta = $llmMetadata['extraction'] ?? [];
+
             if ($result['success']) {
-                Log::info("ProcessInstagramPost: Successfully processed post {$this->postId}", [
-                    'products_created' => $result['products_created'] ?? 0
+                Log::info('Post processed', [
+                    // Job context
+                    'job.type' => 'process_post',
+                    'post.id' => $this->postId,
+                    'post.shortcode' => $post->shortcode,
+                    'run.id' => $this->runId,
+
+                    // Result
+                    'status' => 'success',
+                    'products.created' => $result['products_created'] ?? 0,
+                    'products.skipped_low_confidence' => $result['products_skipped_low_confidence'] ?? 0,
+
+                    // Classification details
+                    'classification.category' => $result['group'] ?? null,
+                    'classification.model' => $classificationMeta['model'] ?? null,
+                    'classification.provider' => $classificationMeta['provider'] ?? null,
+                    'classification.duration_ms' => $classificationMeta['duration_ms'] ?? null,
+                    'classification.fallback' => $classificationMeta['fallback'] ?? false,
+
+                    // Extraction details
+                    'extraction.model' => $extractionMeta['model'] ?? null,
+                    'extraction.provider' => $extractionMeta['provider'] ?? null,
+                    'extraction.images_count' => $extractionMeta['images_count'] ?? null,
+                    'extraction.has_products' => true,
+                    'extraction.duration_ms' => $extractionMeta['duration_ms'] ?? null,
+                    'extraction.attempts' => $llmMetadata['extraction_attempts'] ?? 1,
+
+                    // Timing
+                    'duration.total_ms' => $durationMs,
                 ]);
                 $this->updateRunStats('processed');
             } else {
-                Log::info("ProcessInstagramPost: Skipped post {$this->postId}", [
-                    'reason' => $result['reason'] ?? 'unknown'
+                Log::info('Post skipped', [
+                    // Job context
+                    'job.type' => 'process_post',
+                    'post.id' => $this->postId,
+                    'post.shortcode' => $post->shortcode,
+                    'run.id' => $this->runId,
+
+                    // Result
+                    'status' => 'skipped',
+                    'skip.reason' => $result['reason'] ?? 'unknown',
+
+                    // Classification details (if available)
+                    'classification.category' => $result['group'] ?? null,
+                    'classification.model' => $classificationMeta['model'] ?? null,
+                    'classification.provider' => $classificationMeta['provider'] ?? null,
+                    'classification.duration_ms' => $classificationMeta['duration_ms'] ?? null,
+                    'classification.fallback' => $classificationMeta['fallback'] ?? false,
+
+                    // Extraction details (if available)
+                    'extraction.model' => $extractionMeta['model'] ?? null,
+                    'extraction.provider' => $extractionMeta['provider'] ?? null,
+                    'extraction.images_count' => $extractionMeta['images_count'] ?? null,
+                    'extraction.has_products' => false,
+                    'extraction.products_count' => 0,
+                    'extraction.duration_ms' => $extractionMeta['duration_ms'] ?? null,
+                    'extraction.attempts' => $llmMetadata['extraction_attempts'] ?? null,
+
+                    // Timing
+                    'duration.total_ms' => $durationMs,
                 ]);
                 $this->updateRunStats('skipped');
             }
         } catch (Exception $e) {
-            Log::error("ProcessInstagramPost: Failed to process post {$this->postId}", [
-                'error' => $e->getMessage()
+            $durationMs = (int) round((microtime(true) - $startTime) * 1000);
+
+            // Try to extract LLM metadata from JSON-encoded exception message
+            $errorMessage = $e->getMessage();
+            $llmErrorMeta = [];
+            if (str_starts_with($errorMessage, '{')) {
+                $decoded = json_decode($errorMessage, true);
+                if ($decoded && isset($decoded['_metadata'])) {
+                    $llmErrorMeta = $decoded['_metadata'];
+                    $errorMessage = $decoded['message'] ?? $errorMessage;
+                }
+            }
+
+            Log::error('Post processing failed', [
+                // Job context
+                'job.type' => 'process_post',
+                'post.id' => $this->postId,
+                'post.shortcode' => $post->shortcode ?? null,
+                'run.id' => $this->runId,
+
+                // Result
+                'status' => 'failed',
+
+                // Error details
+                'error.type' => get_class($e),
+                'error.message' => $errorMessage,
+
+                // LLM context (if available from exception)
+                'llm.provider' => $llmErrorMeta['provider'] ?? null,
+                'llm.model' => $llmErrorMeta['model'] ?? null,
+                'llm.duration_ms' => $llmErrorMeta['duration_ms'] ?? null,
+
+                // Timing
+                'duration.total_ms' => $durationMs,
             ]);
             $this->updateRunStats('failed');
             throw $e; // Re-throw to trigger retry
@@ -105,8 +208,19 @@ class ProcessInstagramPost implements ShouldQueue
 
     public function failed(Exception $exception): void
     {
-        Log::error("ProcessInstagramPost: Job failed for post {$this->postId}", [
-            'error' => $exception->getMessage()
+        Log::error('Post processing exhausted retries', [
+            // Job context
+            'job.type' => 'process_post',
+            'post.id' => $this->postId,
+            'run.id' => $this->runId,
+
+            // Result
+            'status' => 'failed',
+            'retries_exhausted' => true,
+
+            // Error details
+            'error.type' => get_class($exception),
+            'error.message' => $exception->getMessage(),
         ]);
         $this->updateRunStats('failed');
     }

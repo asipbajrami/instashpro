@@ -29,10 +29,14 @@ class LabelInstagramPosts implements ShouldQueue
 
     public function handle(LlmServiceInterface $llmService): void
     {
+        $startTime = microtime(true);
         $profile = InstagramProfile::find($this->profileId);
 
         if (!$profile) {
-            Log::warning("LabelInstagramPosts: Profile {$this->profileId} not found");
+            Log::warning('Labeling profile not found', [
+                'job.type' => 'label',
+                'profile.id' => $this->profileId,
+            ]);
             return;
         }
 
@@ -41,9 +45,20 @@ class LabelInstagramPosts implements ShouldQueue
             ->get();
 
         if ($posts->isEmpty()) {
-            Log::info("LabelInstagramPosts: No unlabeled posts for {$profile->username}");
+            Log::info('Labeling skipped (no unlabeled posts)', [
+                'job.type' => 'label',
+                'profile.id' => $this->profileId,
+                'profile.username' => $profile->username,
+            ]);
             return;
         }
+
+        Log::info('Labeling started', [
+            'job.type' => 'label',
+            'profile.id' => $this->profileId,
+            'profile.username' => $profile->username,
+            'posts.total' => $posts->count(),
+        ]);
 
         $labeled = 0;
         $errors = 0;
@@ -54,17 +69,26 @@ class LabelInstagramPosts implements ShouldQueue
                 $post->update(['used_for' => $group]);
                 $labeled++;
             } catch (Exception $e) {
-                Log::error("LabelInstagramPosts: Failed to label post {$post->id}", [
-                    'error' => $e->getMessage()
+                Log::error('Post labeling failed', [
+                    'job.type' => 'label',
+                    'profile.username' => $profile->username,
+                    'post.id' => $post->id,
+                    'error.message' => $e->getMessage(),
                 ]);
                 $errors++;
             }
         }
 
-        Log::info("LabelInstagramPosts: Completed for {$profile->username}", [
-            'total' => $posts->count(),
-            'labeled' => $labeled,
-            'errors' => $errors,
+        $durationMs = round((microtime(true) - $startTime) * 1000);
+
+        Log::info('Labeling completed', [
+            'job.type' => 'label',
+            'profile.id' => $this->profileId,
+            'profile.username' => $profile->username,
+            'posts.total' => $posts->count(),
+            'posts.labeled' => $labeled,
+            'posts.errors' => $errors,
+            'duration.ms' => $durationMs,
         ]);
     }
 
@@ -90,8 +114,11 @@ class LabelInstagramPosts implements ShouldQueue
 
     public function failed(Exception $exception): void
     {
-        Log::error("LabelInstagramPosts: Job failed for profile {$this->profileId}", [
-            'error' => $exception->getMessage()
+        Log::error('Labeling job failed (all retries exhausted)', [
+            'job.type' => 'label',
+            'profile.id' => $this->profileId,
+            'error.type' => get_class($exception),
+            'error.message' => $exception->getMessage(),
         ]);
     }
 }

@@ -95,6 +95,8 @@ class LiteLLMService implements LlmServiceInterface
             'response_format' => $schema
         ];
 
+        $startTime = microtime(true);
+
         try {
             $headers = [
                 'Content-Type' => 'application/json',
@@ -108,6 +110,8 @@ class LiteLLMService implements LlmServiceInterface
             $response = Http::withHeaders($headers)
                 ->timeout(120)
                 ->post($this->baseUrl, $payload);
+
+            $durationMs = (int) round((microtime(true) - $startTime) * 1000);
 
             if ($response->failed()) {
                 throw new Exception('API request failed: ' . $response->body());
@@ -133,9 +137,32 @@ class LiteLLMService implements LlmServiceInterface
 
             $parsedContent['image_map'] = $imageMap;
 
+            // Add metadata for wide event logging (no logging here - caller logs)
+            $parsedContent['_metadata'] = [
+                'provider' => 'litellm',
+                'model' => $this->model,
+                'duration_ms' => $durationMs,
+                'images_count' => $imageCount,
+                'category' => $group,
+                'has_caption' => !empty($caption),
+            ];
+
             return $parsedContent;
         } catch (Exception $e) {
-            throw new Exception('Failed to extract products: ' . $e->getMessage());
+            $durationMs = (int) round((microtime(true) - $startTime) * 1000);
+            // Re-throw with metadata attached for caller to log
+            throw new Exception(json_encode([
+                'message' => $e->getMessage(),
+                '_metadata' => [
+                    'provider' => 'litellm',
+                    'model' => $this->model,
+                    'duration_ms' => $durationMs,
+                    'images_count' => $imageCount,
+                    'category' => $group,
+                    'has_caption' => !empty($caption),
+                    'error_type' => get_class($e),
+                ],
+            ]));
         }
     }
 
@@ -146,22 +173,45 @@ class LiteLLMService implements LlmServiceInterface
      * @param string|null $caption Post caption
      * @param string|null $base64Image Base64 encoded image for visual classification
      * @param string $defaultCategory Default category if classification fails
+     * @return array{category: string, _metadata: array}
      */
-    public function classifyPostCategory(?string $caption = null, ?string $base64Image = null, string $defaultCategory = 'tech'): string
+    public function classifyPostCategory(?string $caption = null, ?string $base64Image = null, string $defaultCategory = 'tech'): array
     {
         $hasCaption = !empty(trim($caption ?? ''));
         $hasImage = !empty($base64Image);
 
         // Need at least caption or image
         if (!$hasCaption && !$hasImage) {
-            return $defaultCategory;
+            return [
+                'category' => $defaultCategory,
+                '_metadata' => [
+                    'provider' => 'litellm',
+                    'model' => $this->model,
+                    'duration_ms' => 0,
+                    'has_caption' => false,
+                    'has_image' => false,
+                    'fallback' => true,
+                    'fallback_reason' => 'no_input',
+                ],
+            ];
         }
 
         // Fetch categories from database
         $groups = \App\Models\StructureOutputGroup::all();
 
         if ($groups->isEmpty()) {
-            return $defaultCategory;
+            return [
+                'category' => $defaultCategory,
+                '_metadata' => [
+                    'provider' => 'litellm',
+                    'model' => $this->model,
+                    'duration_ms' => 0,
+                    'has_caption' => $hasCaption,
+                    'has_image' => $hasImage,
+                    'fallback' => true,
+                    'fallback_reason' => 'no_groups',
+                ],
+            ];
         }
 
         $categoryNames = $groups->pluck('used_for')->toArray();
@@ -230,6 +280,8 @@ class LiteLLMService implements LlmServiceInterface
             'response_format' => $schema
         ];
 
+        $startTime = microtime(true);
+
         try {
             $headers = [
                 'Content-Type' => 'application/json',
@@ -242,6 +294,8 @@ class LiteLLMService implements LlmServiceInterface
             $response = Http::withHeaders($headers)
                 ->timeout(30)
                 ->post($this->baseUrl, $payload);
+
+            $durationMs = (int) round((microtime(true) - $startTime) * 1000);
 
             if ($response->failed()) {
                 throw new Exception('API request failed: ' . $response->body());
@@ -256,27 +310,75 @@ class LiteLLMService implements LlmServiceInterface
             $jsonText = $responseData['choices'][0]['message']['content'] ?? null;
 
             if (!$jsonText) {
-                return $defaultCategory;
+                return [
+                    'category' => $defaultCategory,
+                    '_metadata' => [
+                        'provider' => 'litellm',
+                        'model' => $this->model,
+                        'duration_ms' => $durationMs,
+                        'has_caption' => $hasCaption,
+                        'has_image' => $hasImage,
+                        'fallback' => true,
+                        'fallback_reason' => 'empty_response',
+                    ],
+                ];
             }
 
             $parsed = json_decode($jsonText, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                return $defaultCategory;
+                return [
+                    'category' => $defaultCategory,
+                    '_metadata' => [
+                        'provider' => 'litellm',
+                        'model' => $this->model,
+                        'duration_ms' => $durationMs,
+                        'has_caption' => $hasCaption,
+                        'has_image' => $hasImage,
+                        'fallback' => true,
+                        'fallback_reason' => 'json_parse_error',
+                    ],
+                ];
             }
 
             $category = $parsed['category'] ?? $defaultCategory;
+            $isFallback = false;
+            $fallbackReason = null;
 
             // Validate it's one of the allowed categories from DB
             if (!in_array($category, $categoryNames)) {
-                return $defaultCategory;
+                $isFallback = true;
+                $fallbackReason = 'invalid_category';
+                $category = $defaultCategory;
             }
 
-            return $category;
+            return [
+                'category' => $category,
+                '_metadata' => [
+                    'provider' => 'litellm',
+                    'model' => $this->model,
+                    'duration_ms' => $durationMs,
+                    'has_caption' => $hasCaption,
+                    'has_image' => $hasImage,
+                    'fallback' => $isFallback,
+                    'fallback_reason' => $fallbackReason,
+                ],
+            ];
         } catch (Exception $e) {
-            // Log error but don't fail - return default
-            \Illuminate\Support\Facades\Log::warning('Post classification failed: ' . $e->getMessage());
-            return $defaultCategory;
+            $durationMs = (int) round((microtime(true) - $startTime) * 1000);
+            return [
+                'category' => $defaultCategory,
+                '_metadata' => [
+                    'provider' => 'litellm',
+                    'model' => $this->model,
+                    'duration_ms' => $durationMs,
+                    'has_caption' => $hasCaption,
+                    'has_image' => $hasImage,
+                    'fallback' => true,
+                    'fallback_reason' => 'exception',
+                    'error_message' => $e->getMessage(),
+                ],
+            ];
         }
     }
 

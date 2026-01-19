@@ -79,3 +79,7 @@ setup:
 	@echo "  Backend:   http://localhost:8000"
 	@echo "  Admin:     http://localhost:5173"
 
+
+
+
+

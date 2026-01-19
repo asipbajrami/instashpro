@@ -7,6 +7,7 @@ use App\Models\InstagramProfile;
 use App\Services\Instagram\InstagramProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class InstagramProfileController extends Controller
@@ -74,6 +75,12 @@ class InstagramProfileController extends Controller
             // Set initial next_scrape_at
             $profile->update(['next_scrape_at' => $profile->getNextScheduledAt()]);
 
+            Log::info('Profile created', [
+                'profile.id' => $profile->id,
+                'profile.username' => $profile->username,
+                'admin.id' => auth()->id(),
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Profile added successfully with Instagram data',
@@ -93,6 +100,13 @@ class InstagramProfileController extends Controller
 
             // Set initial next_scrape_at
             $profile->update(['next_scrape_at' => $profile->getNextScheduledAt()]);
+
+            Log::info('Profile created (without Instagram data)', [
+                'profile.id' => $profile->id,
+                'profile.username' => $profile->username,
+                'admin.id' => auth()->id(),
+                'error.message' => $e->getMessage(),
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -129,12 +143,28 @@ class InstagramProfileController extends Controller
             ]);
         }
 
+        Log::info('Profile updated', [
+            'profile.id' => $instagramProfile->id,
+            'profile.username' => $instagramProfile->username,
+            'changes' => array_keys($validated),
+            'admin.id' => auth()->id(),
+        ]);
+
         return response()->json($instagramProfile);
     }
 
     public function destroy(InstagramProfile $instagramProfile): JsonResponse
     {
+        $profileId = $instagramProfile->id;
+        $username = $instagramProfile->username;
+
         $instagramProfile->delete();
+
+        Log::info('Profile deleted', [
+            'profile.id' => $profileId,
+            'profile.username' => $username,
+            'admin.id' => auth()->id(),
+        ]);
 
         return response()->json(null, 204);
     }

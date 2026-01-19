@@ -31,13 +31,25 @@ class ScrapeInstagramProfile implements ShouldQueue
 
     public function handle(InstagramPostService $postService, InstagramController $instagramController): void
     {
+        $startTime = microtime(true);
         $profile = InstagramProfile::find($this->profileId);
         $run = InstagramScrapeRun::find($this->runId);
 
         if (!$profile || !$run) {
-            Log::warning("ScrapeInstagramProfile: Profile {$this->profileId} or Run {$this->runId} not found");
+            Log::warning('Scrape profile not found', [
+                'job.type' => 'scrape',
+                'profile.id' => $this->profileId,
+                'run.id' => $this->runId,
+            ]);
             return;
         }
+
+        Log::info('Scrape started', [
+            'job.type' => 'scrape',
+            'profile.id' => $this->profileId,
+            'profile.username' => $profile->username,
+            'run.id' => $this->runId,
+        ]);
 
         $isFirstScrape = !$profile->initial_scrape_done;
 
@@ -77,9 +89,11 @@ class ScrapeInstagramProfile implements ShouldQueue
                     });
                     $postsNew++;
                 } catch (Exception $e) {
-                    Log::error("Failed to save post during scrape run", [
-                        'shortcode' => $shortcode,
-                        'error' => $e->getMessage(),
+                    Log::error('Post save failed during scrape', [
+                        'job.type' => 'scrape',
+                        'profile.username' => $profile->username,
+                        'post.shortcode' => $shortcode,
+                        'error.message' => $e->getMessage(),
                     ]);
                 }
             }
@@ -96,6 +110,9 @@ class ScrapeInstagramProfile implements ShouldQueue
 
             $profile->updateLocalPostCount();
 
+            // Always update last_scraped_at
+            $profile->update(['last_scraped_at' => now()]);
+
             if ($isFirstScrape) {
                 $profile->update([
                     'initial_scrape_done' => true,
@@ -103,15 +120,32 @@ class ScrapeInstagramProfile implements ShouldQueue
                 ]);
             }
 
-            Log::info("ScrapeInstagramProfile: Completed for {$profile->username}", [
-                'posts_fetched' => $postsFetched,
-                'posts_new' => $postsNew,
-                'posts_skipped' => $postsSkipped,
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
+            Log::info('Scrape completed', [
+                'job.type' => 'scrape',
+                'profile.id' => $this->profileId,
+                'profile.username' => $profile->username,
+                'run.id' => $this->runId,
+                'posts.fetched' => $postsFetched,
+                'posts.new' => $postsNew,
+                'posts.skipped' => $postsSkipped,
+                'pagination.has_more' => $result['has_more'] ?? false,
+                'is_first_scrape' => $isFirstScrape,
+                'duration.ms' => $durationMs,
             ]);
 
         } catch (Exception $e) {
-            Log::error("ScrapeInstagramProfile: Failed for {$profile->username}", [
-                'error' => $e->getMessage(),
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
+            Log::error('Scrape failed', [
+                'job.type' => 'scrape',
+                'profile.id' => $this->profileId,
+                'profile.username' => $profile->username,
+                'run.id' => $this->runId,
+                'error.type' => get_class($e),
+                'error.message' => $e->getMessage(),
+                'duration.ms' => $durationMs,
             ]);
 
             $run->update([
@@ -126,8 +160,12 @@ class ScrapeInstagramProfile implements ShouldQueue
 
     public function failed(Exception $exception): void
     {
-        Log::error("ScrapeInstagramProfile: Job failed for profile {$this->profileId}", [
-            'error' => $exception->getMessage()
+        Log::error('Scrape job failed (all retries exhausted)', [
+            'job.type' => 'scrape',
+            'profile.id' => $this->profileId,
+            'run.id' => $this->runId,
+            'error.type' => get_class($exception),
+            'error.message' => $exception->getMessage(),
         ]);
 
         $run = InstagramScrapeRun::find($this->runId);
