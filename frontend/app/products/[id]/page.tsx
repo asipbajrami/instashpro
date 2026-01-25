@@ -324,14 +324,14 @@ export default function ProductPage({ params }: ProductPageProps) {
           {product.attributes.length > 0 && (
             <div>
               <h2 className="font-medium mb-3">Specifications</h2>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2">
                 {product.attributes.map((attr, index) => (
                   <div
                     key={`${attr.attribute_id}-${index}`}
-                    className="flex justify-between py-2 px-3 bg-muted rounded-md"
+                    className="flex flex-col py-2.5 px-3 bg-muted rounded-md"
                   >
-                    <span className="text-muted-foreground">{attr.name}</span>
-                    <span className="font-medium">{attr.value}</span>
+                    <span className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">{attr.name}</span>
+                    <span className="font-medium text-sm leading-tight">{attr.value}</span>
                   </div>
                 ))}
               </div>
@@ -420,8 +420,16 @@ export default function ProductPage({ params }: ProductPageProps) {
             </div>
           </div>
 
-          {/* Modal Carousel */}
-          <div className="relative w-full px-1 py-1 sm:px-2 sm:py-2 flex items-center justify-center flex-1 min-h-0 overflow-hidden">
+          {/* Modal Carousel - tap background to close on mobile */}
+          <div
+            className="relative w-full px-1 py-1 sm:px-2 sm:py-2 flex items-center justify-center flex-1 min-h-0 overflow-hidden"
+            onClick={(e) => {
+              // Close modal when clicking the background (not the image) on mobile
+              if (e.target === e.currentTarget && window.innerWidth < 640) {
+                setModalOpen(false);
+              }
+            }}
+          >
             <Carousel
               setApi={setModalApi}
               opts={{ startIndex: modalIndex }}
@@ -430,8 +438,23 @@ export default function ProductPage({ params }: ProductPageProps) {
               <CarouselContent className="ml-0 h-full">
                 {product.images.map((image, index) => (
                   <CarouselItem key={image.id} className="pl-0 h-full">
-                    <div className="relative w-full h-full flex items-center justify-center p-0.5 sm:p-1">
-                      <div className="relative w-full h-full flex items-center justify-center">
+                    <div
+                      className="relative w-full h-full flex items-center justify-center p-0.5 sm:p-1"
+                      onClick={(e) => {
+                        // Close on tap outside image on mobile
+                        if (e.target === e.currentTarget && window.innerWidth < 640) {
+                          setModalOpen(false);
+                        }
+                      }}
+                    >
+                      <div
+                        className="relative w-full h-full flex items-center justify-center"
+                        onClick={(e) => {
+                          if (e.target === e.currentTarget && window.innerWidth < 640) {
+                            setModalOpen(false);
+                          }
+                        }}
+                      >
                         <img
                           src={
                             image.url.startsWith('/')
@@ -439,7 +462,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                               : image.url
                           }
                           alt={`${product.name} - Image ${index + 1}`}
-                          className="object-contain w-full h-full"
+                          className="object-contain w-full h-full pointer-events-none sm:pointer-events-auto"
                           style={{ maxWidth: '100%', maxHeight: '100%' }}
                         />
                       </div>
