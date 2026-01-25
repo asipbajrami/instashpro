@@ -228,8 +228,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full flex h-14 items-center">
-        {/* Logo - Fixed at far left */}
-        <Link href="/" className="flex items-center gap-2 shrink-0 pl-4 sm:pl-6 lg:pl-8">
+        {/* Logo - Fixed at far left, hidden on mobile */}
+        <Link href="/" className="hidden sm:flex items-center gap-2 shrink-0 pl-4 sm:pl-6 lg:pl-8">
           <ShoppingBag className="h-6 w-6" />
           <div className="hidden sm:block">
             <span className="text-lg font-bold leading-none">InstashPro</span>

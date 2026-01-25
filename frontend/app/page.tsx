@@ -245,30 +245,30 @@ function HomeContent() {
           <div className="flex flex-col gap-2 mb-4 lg:hidden">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <LayoutGrid className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">
-                  {pagination ? `${pagination.total} Products` : 'Products'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 px-1">
-                <Select value={filters.sort || 'newest'} onValueChange={handleSortChange}>
-                  <SelectTrigger className="w-[130px] h-9">
-                    <ArrowUpDown className="h-4 w-4 mr-1" />
-                    <SelectValue placeholder="Sort" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest</SelectItem>
-                    <SelectItem value="oldest">Oldest</SelectItem>
-                    <SelectItem value="price_asc">Price ↑</SelectItem>
-                    <SelectItem value="price_desc">Price ↓</SelectItem>
-                  </SelectContent>
-                </Select>
                 <FilterSheet
                   filters={filters}
                   onFiltersChange={updateFilters}
                   facets={facets}
                 />
+                <div className="flex items-center gap-1.5">
+                  <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {pagination ? `${pagination.total} Products` : 'Products'}
+                  </span>
+                </div>
               </div>
+              <Select value={filters.sort || 'newest'} onValueChange={handleSortChange}>
+                <SelectTrigger className="w-[130px] h-9">
+                  <ArrowUpDown className="h-4 w-4 mr-1" />
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest</SelectItem>
+                  <SelectItem value="oldest">Oldest</SelectItem>
+                  <SelectItem value="price_asc">Price ↑</SelectItem>
+                  <SelectItem value="price_desc">Price ↓</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="bg-muted/30 border rounded-lg py-1.5 px-3 text-center">
               <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight leading-tight">
