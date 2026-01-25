@@ -169,49 +169,51 @@ export function StructureOutputs() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Structure Outputs</h1>
-        <Button onClick={() => setIsCreateOpen(true)}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold">Structure Outputs</h1>
+        <Button onClick={() => setIsCreateOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Output
         </Button>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <Input
           placeholder="Search by key or description..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
+          className="w-full sm:max-w-xs"
         />
-        <Select value={parentKeyFilter || "all"} onValueChange={(v) => setParentKeyFilter(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-32">
-            <SelectValue placeholder="All groups" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All groups</SelectItem>
-            {PARENT_KEYS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={usedForFilter || "all"} onValueChange={(v) => setUsedForFilter(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="All types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All types</SelectItem>
-            {Object.values(USED_FOR_OPTIONS)
-              .flat()
-              .map((option) => (
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Select value={parentKeyFilter || "all"} onValueChange={(v) => setParentKeyFilter(v === "all" ? "" : v)}>
+            <SelectTrigger className="flex-1 sm:w-32">
+              <SelectValue placeholder="All groups" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All groups</SelectItem>
+              {PARENT_KEYS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
               ))}
-          </SelectContent>
-        </Select>
+            </SelectContent>
+          </Select>
+          <Select value={usedForFilter || "all"} onValueChange={(v) => setUsedForFilter(v === "all" ? "" : v)}>
+            <SelectTrigger className="flex-1 sm:w-40">
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {Object.values(USED_FOR_OPTIONS)
+                .flat()
+                .map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {isLoading ? (
@@ -219,64 +221,119 @@ export function StructureOutputs() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Key</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Group</TableHead>
-              <TableHead>Product Type</TableHead>
-              <TableHead>Attribute</TableHead>
-              <TableHead>Required</TableHead>
-              <TableHead className="w-24">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <>
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
             {data?.data.map((output) => (
-              <TableRow key={output.id}>
-                <TableCell className="font-mono text-sm">{output.key}</TableCell>
-                <TableCell className="max-w-xs truncate">
+              <div key={output.id} className="rounded-lg border bg-card p-4 shadow-sm">
+                <div className="font-mono text-sm font-medium mb-1">{output.key}</div>
+                <div className="text-sm text-muted-foreground mb-2 line-clamp-2">
                   {output.description}
-                </TableCell>
-                <TableCell>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-3">
                   <Badge variant="outline">{output.parent_key}</Badge>
-                </TableCell>
-                <TableCell className="capitalize">{output.used_for}</TableCell>
-                <TableCell>
-                  {output.product_attribute?.name || '-'}
-                </TableCell>
-                <TableCell>
-                  {output.required ? (
-                    <Badge variant="success">Yes</Badge>
-                  ) : (
-                    <Badge variant="secondary">No</Badge>
+                  <Badge variant="secondary" className="capitalize">{output.used_for}</Badge>
+                  {output.product_attribute?.name && (
+                    <Badge variant="outline">{output.product_attribute.name}</Badge>
                   )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(output)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setSelectedOutput(output);
-                        setIsDeleteOpen(true);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
+                  {output.required ? (
+                    <Badge variant="success">Required</Badge>
+                  ) : (
+                    <Badge variant="secondary">Optional</Badge>
+                  )}
+                </div>
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleEdit(output)}
+                  >
+                    <Pencil className="h-4 w-4 mr-1" /> Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={() => {
+                      setSelectedOutput(output);
+                      setIsDeleteOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             ))}
-          </TableBody>
-        </Table>
+            {data?.data.length === 0 && (
+              <div className="text-center text-muted-foreground py-8">
+                No structure outputs found.
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Key</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Group</TableHead>
+                  <TableHead>Product Type</TableHead>
+                  <TableHead>Attribute</TableHead>
+                  <TableHead>Required</TableHead>
+                  <TableHead className="w-24">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data?.data.map((output) => (
+                  <TableRow key={output.id}>
+                    <TableCell className="font-mono text-sm">{output.key}</TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      {output.description}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{output.parent_key}</Badge>
+                    </TableCell>
+                    <TableCell className="capitalize">{output.used_for}</TableCell>
+                    <TableCell>
+                      {output.product_attribute?.name || '-'}
+                    </TableCell>
+                    <TableCell>
+                      {output.required ? (
+                        <Badge variant="success">Yes</Badge>
+                      ) : (
+                        <Badge variant="secondary">No</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(output)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedOutput(output);
+                            setIsDeleteOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       {/* Create/Edit Dialog */}

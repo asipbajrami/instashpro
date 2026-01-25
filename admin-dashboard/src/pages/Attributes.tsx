@@ -93,14 +93,14 @@ export function Attributes() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Product Attributes</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">Product Attributes</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             Manage attributes that can be linked to structure outputs
           </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)}>
+        <Button onClick={() => setIsCreateOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Attribute
         </Button>
@@ -111,75 +111,138 @@ export function Attributes() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Values Count</TableHead>
-              <TableHead className="w-24">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <>
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
             {attributes?.map((attribute) => (
-              <TableRow key={attribute.id}>
-                <TableCell className="font-mono text-sm">{attribute.id}</TableCell>
-                <TableCell className="font-medium">{attribute.name}</TableCell>
-                <TableCell className="font-mono text-sm text-muted-foreground">
-                  {attribute.slug || '-'}
-                </TableCell>
-                <TableCell>
+              <div key={attribute.id} className="rounded-lg border bg-card p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">{attribute.name}</span>
+                  <span className="text-xs text-muted-foreground font-mono">#{attribute.id}</span>
+                </div>
+                <div className="text-sm text-muted-foreground mb-3">
+                  <span className="font-mono">{attribute.slug || '-'}</span>
+                </div>
+                <div className="mb-3">
                   <Button
                     variant="link"
-                    className="p-0 h-auto font-normal"
+                    className="p-0 h-auto font-normal text-sm"
                     onClick={() => navigate(`/attributes/${attribute.id}/values`)}
                   >
                     {attribute.values_count ?? 0} values
                   </Button>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="View Values"
-                      onClick={() => navigate(`/attributes/${attribute.id}/values`)}
-                    >
-                      <List className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Edit Attribute"
-                      onClick={() => handleEdit(attribute)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Delete Attribute"
-                      onClick={() => {
-                        setSelectedAttribute(attribute);
-                        setIsDeleteOpen(true);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
+                </div>
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => navigate(`/attributes/${attribute.id}/values`)}
+                  >
+                    <List className="h-4 w-4 mr-1" /> Values
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleEdit(attribute)}
+                  >
+                    <Pencil className="h-4 w-4 mr-1" /> Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={() => {
+                      setSelectedAttribute(attribute);
+                      setIsDeleteOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             ))}
             {attributes?.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                  No attributes found. Create your first attribute to get started.
-                </TableCell>
-              </TableRow>
+              <div className="text-center text-muted-foreground py-8">
+                No attributes found. Create your first attribute to get started.
+              </div>
             )}
-          </TableBody>
-        </Table>
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Slug</TableHead>
+                  <TableHead>Values Count</TableHead>
+                  <TableHead className="w-24">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {attributes?.map((attribute) => (
+                  <TableRow key={attribute.id}>
+                    <TableCell className="font-mono text-sm">{attribute.id}</TableCell>
+                    <TableCell className="font-medium">{attribute.name}</TableCell>
+                    <TableCell className="font-mono text-sm text-muted-foreground">
+                      {attribute.slug || '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="link"
+                        className="p-0 h-auto font-normal"
+                        onClick={() => navigate(`/attributes/${attribute.id}/values`)}
+                      >
+                        {attribute.values_count ?? 0} values
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="View Values"
+                          onClick={() => navigate(`/attributes/${attribute.id}/values`)}
+                        >
+                          <List className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Edit Attribute"
+                          onClick={() => handleEdit(attribute)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Delete Attribute"
+                          onClick={() => {
+                            setSelectedAttribute(attribute);
+                            setIsDeleteOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {attributes?.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      No attributes found. Create your first attribute to get started.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       {/* Create Dialog */}

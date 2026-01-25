@@ -76,18 +76,18 @@ export function AttributeOutputsOverview() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Attributes & Structure Outputs</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">Attributes & Structure Outputs</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             Overview of all attributes and their linked structure outputs
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={expandAll}>
+          <Button variant="outline" size="sm" onClick={expandAll} className="flex-1 sm:flex-none">
             Expand All
           </Button>
-          <Button variant="outline" size="sm" onClick={collapseAll}>
+          <Button variant="outline" size="sm" onClick={collapseAll} className="flex-1 sm:flex-none">
             Collapse All
           </Button>
         </div>
@@ -98,7 +98,7 @@ export function AttributeOutputsOverview() {
           placeholder="Search attributes or outputs..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
+          className="w-full sm:max-w-sm"
         />
       </div>
 
@@ -109,7 +109,7 @@ export function AttributeOutputsOverview() {
       ) : (
         <div className="space-y-6">
           {/* Summary Cards */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>Total Attributes</CardDescription>
@@ -204,14 +204,14 @@ function AttributeCard({ attribute, isExpanded, onToggle }: AttributeCardProps) 
   return (
     <Card>
       <div
-        className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50"
+        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 cursor-pointer hover:bg-muted/50 gap-3"
         onClick={onToggle}
       >
         <div className="flex items-center gap-3">
           {isExpanded ? (
-            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+            <ChevronDown className="h-5 w-5 text-muted-foreground flex-shrink-0" />
           ) : (
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
           )}
           <div>
             <h3 className="font-medium">{attribute.name}</h3>
@@ -222,7 +222,7 @@ function AttributeCard({ attribute, isExpanded, onToggle }: AttributeCardProps) 
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 ml-8 sm:ml-0 flex-wrap">
           <Badge variant="outline" className="gap-1">
             <List className="h-3 w-3" />
             {attribute.values_count || 0} values
@@ -244,38 +244,62 @@ function AttributeCard({ attribute, isExpanded, onToggle }: AttributeCardProps) 
 
       {isExpanded && attribute.structure_outputs?.length > 0 && (
         <CardContent className="border-t pt-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Key</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Group</TableHead>
-                <TableHead>Product Type</TableHead>
-                <TableHead>Required</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {attribute.structure_outputs.map((output) => (
-                <TableRow key={output.id}>
-                  <TableCell className="font-mono text-sm">{output.key}</TableCell>
-                  <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
-                    {output.description}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{output.parent_key}</Badge>
-                  </TableCell>
-                  <TableCell className="capitalize">{output.used_for}</TableCell>
-                  <TableCell>
-                    {output.required ? (
-                      <Badge variant="default">Yes</Badge>
-                    ) : (
-                      <Badge variant="secondary">No</Badge>
-                    )}
-                  </TableCell>
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
+            {attribute.structure_outputs.map((output) => (
+              <div key={output.id} className="p-3 rounded-lg bg-muted/50">
+                <div className="font-mono text-sm font-medium mb-1">{output.key}</div>
+                <div className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                  {output.description}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline">{output.parent_key}</Badge>
+                  <Badge variant="secondary" className="capitalize">{output.used_for}</Badge>
+                  {output.required ? (
+                    <Badge variant="default">Required</Badge>
+                  ) : (
+                    <Badge variant="outline">Optional</Badge>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Key</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Group</TableHead>
+                  <TableHead>Product Type</TableHead>
+                  <TableHead>Required</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {attribute.structure_outputs.map((output) => (
+                  <TableRow key={output.id}>
+                    <TableCell className="font-mono text-sm">{output.key}</TableCell>
+                    <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
+                      {output.description}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{output.parent_key}</Badge>
+                    </TableCell>
+                    <TableCell className="capitalize">{output.used_for}</TableCell>
+                    <TableCell>
+                      {output.required ? (
+                        <Badge variant="default">Yes</Badge>
+                      ) : (
+                        <Badge variant="secondary">No</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       )}
     </Card>

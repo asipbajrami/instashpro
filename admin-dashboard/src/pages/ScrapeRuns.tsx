@@ -4,7 +4,8 @@ import { useProfiles } from '@/api/profiles';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -293,6 +294,192 @@ function ProfileRow({
   );
 }
 
+// Mobile-optimized profile card with collapsible actions
+function MobileProfileCard({
+  profile,
+  onScrape,
+  onProcess,
+  onLabel,
+  onFullPipeline,
+  onReprocessSkipped,
+  isScraping,
+  isProcessing,
+  isLabeling,
+  isFullPipelining,
+  isReprocessingSkipped,
+  activeRun,
+  skippedCount,
+}: {
+  profile: InstagramProfile;
+  onScrape: () => void;
+  onProcess: () => void;
+  onLabel: () => void;
+  onFullPipeline: () => void;
+  onReprocessSkipped: () => void;
+  isScraping: boolean;
+  isProcessing: boolean;
+  isLabeling: boolean;
+  isFullPipelining: boolean;
+  isReprocessingSkipped: boolean;
+  activeRun?: ActiveRun;
+  skippedCount?: number;
+}) {
+  const [showAllActions, setShowAllActions] = useState(false);
+
+  const isScrapeRunning = activeRun?.type === 'scrape' && activeRun.status === 'running';
+  const isProcessRunning = activeRun?.type === 'process' && activeRun.status === 'running';
+  const isLabelRunning = activeRun?.type === 'label' && activeRun.status === 'running';
+  const isFullPipelineRunning = activeRun?.type === 'full_pipeline' && activeRun.status === 'running';
+  const isReprocessSkippedRunning = activeRun?.type === 'reprocess_skipped' && activeRun.status === 'running';
+  const isAnyRunning = isScrapeRunning || isProcessRunning || isLabelRunning || isFullPipelineRunning || isReprocessSkippedRunning;
+
+  return (
+    <div className="rounded-lg border bg-card p-4 shadow-sm">
+      {/* Header with profile info */}
+      <div className="flex items-center gap-3 mb-3">
+        {profile.profile_pic_url && (
+          <img
+            src={profile.profile_pic_url}
+            alt={profile.username}
+            className="w-10 h-10 rounded-full"
+          />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="font-medium truncate">{profile.username}</div>
+          <div className="text-xs text-muted-foreground truncate">{profile.full_name}</div>
+        </div>
+        {profile.initial_scrape_done ? (
+          <Badge variant="default">Done</Badge>
+        ) : (
+          <Badge variant="outline" className="text-orange-600 border-orange-300">Pending</Badge>
+        )}
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 gap-2 text-sm mb-3 py-2 border-y">
+        <div>
+          <span className="text-muted-foreground">Posts:</span>
+          <span className="ml-1 font-medium">{profile.local_post_count}/{profile.media_count}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Coverage:</span>
+          <span className="ml-1 font-medium">{profile.coverage_percentage?.toFixed(1) || 0}%</span>
+        </div>
+      </div>
+
+      {/* Primary actions - always visible */}
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        <Button
+          size="sm"
+          variant={isScrapeRunning ? 'secondary' : 'outline'}
+          onClick={onScrape}
+          disabled={isScraping || isScrapeRunning}
+          className="h-10"
+        >
+          {isScrapeRunning ? (
+            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+          ) : (
+            <Play className="h-4 w-4 mr-1" />
+          )}
+          {isScrapeRunning ? 'Scraping' : 'Scrape'}
+        </Button>
+        <Button
+          size="sm"
+          variant={isFullPipelineRunning ? 'default' : 'secondary'}
+          onClick={onFullPipeline}
+          disabled={isFullPipelining || isAnyRunning}
+          className="h-10"
+        >
+          {isFullPipelineRunning ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              {activeRun?.progress || 'Running'}
+            </>
+          ) : (
+            <>
+              <Zap className="h-4 w-4 mr-1" />
+              Full Pipeline
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Secondary actions - collapsible */}
+      <button
+        onClick={() => setShowAllActions(!showAllActions)}
+        className="w-full text-sm text-muted-foreground py-2 flex items-center justify-center gap-1 hover:text-foreground transition-colors"
+      >
+        {showAllActions ? 'Hide actions' : 'More actions'}
+        <ChevronDown className={cn("h-4 w-4 transition-transform", showAllActions && "rotate-180")} />
+      </button>
+
+      {showAllActions && (
+        <div className="grid grid-cols-2 gap-2 pt-2">
+          <Button
+            size="sm"
+            variant={isLabelRunning ? 'secondary' : 'outline'}
+            onClick={onLabel}
+            disabled={isLabeling || isLabelRunning || !profile.initial_scrape_done}
+            className="h-10"
+          >
+            {isLabelRunning ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                {activeRun?.progress || 'Labeling'}
+              </>
+            ) : (
+              <>
+                <Tag className="h-4 w-4 mr-1" />
+                Label
+              </>
+            )}
+          </Button>
+          <Button
+            size="sm"
+            variant={isProcessRunning ? 'secondary' : 'outline'}
+            onClick={onProcess}
+            disabled={isProcessing || isAnyRunning || !profile.initial_scrape_done}
+            className="h-10"
+          >
+            {isProcessRunning ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                {activeRun?.progress || 'Processing'}
+              </>
+            ) : (
+              <>
+                <Cpu className="h-4 w-4 mr-1" />
+                Process
+              </>
+            )}
+          </Button>
+          {(skippedCount !== undefined && skippedCount > 0) && (
+            <Button
+              size="sm"
+              variant={isReprocessSkippedRunning ? 'secondary' : 'outline'}
+              onClick={onReprocessSkipped}
+              disabled={isReprocessingSkipped || isAnyRunning}
+              className="h-10 col-span-2"
+            >
+              {isReprocessSkippedRunning ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  {activeRun?.progress || 'Reprocessing'}
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="h-4 w-4 mr-1" />
+                  Retry Skipped ({skippedCount})
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ScrapeRuns() {
   const [selectedProfileId, setSelectedProfileId] = useState<number | undefined>();
   const [scrapeRunsPage, setScrapeRunsPage] = useState(1);
@@ -570,10 +757,10 @@ export function ScrapeRuns() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Scrape & Processing Runs</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">Scrape & Processing Runs</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             Manage Instagram scraping and product processing
           </p>
         </div>
@@ -584,13 +771,15 @@ export function ScrapeRuns() {
             onClick={handleCleanupStaleRuns}
             disabled={cleanupStaleRunsMutation.isPending}
             title="Fix stuck runs that show as running but are actually complete or timed out"
+            className="flex-1 sm:flex-none"
           >
             {cleanupStaleRunsMutation.isPending ? (
               <Loader2 className="h-4 w-4 mr-1 animate-spin" />
             ) : (
               <Trash2 className="h-4 w-4 mr-1" />
             )}
-            Cleanup Stuck
+            <span className="hidden sm:inline">Cleanup Stuck</span>
+            <span className="sm:hidden">Cleanup</span>
           </Button>
           <Button
             variant="outline"
@@ -607,10 +796,10 @@ export function ScrapeRuns() {
       </div>
 
       <Tabs defaultValue="profiles" className="w-full">
-        <TabsList>
-          <TabsTrigger value="profiles">Profiles</TabsTrigger>
-          <TabsTrigger value="scrape">Scrape History</TabsTrigger>
-          <TabsTrigger value="processing">Processing History</TabsTrigger>
+        <TabsList className="w-full sm:w-auto overflow-x-auto flex-nowrap">
+          <TabsTrigger value="profiles" className="flex-shrink-0">Profiles</TabsTrigger>
+          <TabsTrigger value="scrape" className="flex-shrink-0">Scrape History</TabsTrigger>
+          <TabsTrigger value="processing" className="flex-shrink-0">Processing History</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profiles" className="mt-4">
@@ -619,20 +808,11 @@ export function ScrapeRuns() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Profile</TableHead>
-                  <TableHead>Initial Scrape</TableHead>
-                  <TableHead>Posts</TableHead>
-                  <TableHead>Per Request</TableHead>
-                  <TableHead>Last Scraped</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-3">
                 {profiles?.data?.map((profile) => (
-                  <ProfileRow
+                  <MobileProfileCard
                     key={profile.id}
                     profile={profile}
                     onScrape={() => handleTriggerScrape(profile.id)}
@@ -640,26 +820,67 @@ export function ScrapeRuns() {
                     onLabel={() => handleTriggerLabeling(profile.id)}
                     onFullPipeline={() => handleTriggerFullPipeline(profile.id)}
                     onReprocessSkipped={() => handleTriggerReprocessSkipped(profile.id)}
-                    onUpdateSettings={(value) => handleUpdateSettings(profile.id, value)}
                     isScraping={triggerScrapeMutation.isPending}
                     isProcessing={triggerProcessingMutation.isPending}
                     isLabeling={triggerLabelingMutation.isPending}
                     isFullPipelining={triggerFullPipelineMutation.isPending}
                     isReprocessingSkipped={triggerReprocessSkippedMutation.isPending}
-                    isUpdating={updateSettingsMutation.isPending}
                     activeRun={activeRuns[profile.id]}
                     skippedCount={skippedCounts[profile.id]}
                   />
                 ))}
                 {profiles?.data?.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                      No profiles found. Add profiles from the Instagram Profiles page.
-                    </TableCell>
-                  </TableRow>
+                  <div className="text-center text-muted-foreground py-8">
+                    No profiles found. Add profiles from the Instagram Profiles page.
+                  </div>
                 )}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden lg:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Profile</TableHead>
+                      <TableHead>Initial Scrape</TableHead>
+                      <TableHead>Posts</TableHead>
+                      <TableHead>Per Request</TableHead>
+                      <TableHead>Last Scraped</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {profiles?.data?.map((profile) => (
+                      <ProfileRow
+                        key={profile.id}
+                        profile={profile}
+                        onScrape={() => handleTriggerScrape(profile.id)}
+                        onProcess={() => handleTriggerProcessing(profile.id)}
+                        onLabel={() => handleTriggerLabeling(profile.id)}
+                        onFullPipeline={() => handleTriggerFullPipeline(profile.id)}
+                        onReprocessSkipped={() => handleTriggerReprocessSkipped(profile.id)}
+                        onUpdateSettings={(value) => handleUpdateSettings(profile.id, value)}
+                        isScraping={triggerScrapeMutation.isPending}
+                        isProcessing={triggerProcessingMutation.isPending}
+                        isLabeling={triggerLabelingMutation.isPending}
+                        isFullPipelining={triggerFullPipelineMutation.isPending}
+                        isReprocessingSkipped={triggerReprocessSkippedMutation.isPending}
+                        isUpdating={updateSettingsMutation.isPending}
+                        activeRun={activeRuns[profile.id]}
+                        skippedCount={skippedCounts[profile.id]}
+                      />
+                    ))}
+                    {profiles?.data?.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                          No profiles found. Add profiles from the Instagram Profiles page.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </TabsContent>
 
@@ -672,7 +893,7 @@ export function ScrapeRuns() {
                 setScrapeRunsPage(1);
               }}
             >
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Filter by profile" />
               </SelectTrigger>
               <SelectContent>
@@ -692,76 +913,131 @@ export function ScrapeRuns() {
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Profile</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Fetched</TableHead>
-                    <TableHead>New</TableHead>
-                    <TableHead>Skipped</TableHead>
-                    <TableHead>Has More</TableHead>
-                    <TableHead>Started</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {scrapeRunsData?.data?.map((run: InstagramScrapeRun) => (
-                    <TableRow key={run.id}>
-                      <TableCell className="font-medium">
-                        {run.profile?.username || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <TypeBadge type={run.type} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <StatusBadge status={run.status} />
-                          {run.type === 'full_pipeline' && run.status === 'running' && run.error_message && (
-                            <span className="text-xs text-muted-foreground">{run.error_message}</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{run.posts_fetched}</TableCell>
-                      <TableCell className="text-green-600">{run.posts_new}</TableCell>
-                      <TableCell className="text-gray-500">{run.posts_skipped}</TableCell>
-                      <TableCell>
-                        {run.has_more_pages ? (
-                          <Badge variant="secondary">Yes</Badge>
-                        ) : (
-                          <span className="text-gray-400">No</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(run.started_at)}
-                      </TableCell>
-                      <TableCell>
-                        {run.status === 'running' && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => handleCancelScrapeRun(run.id)}
-                            disabled={cancelScrapeRunMutation.isPending}
-                            title="Cancel this run"
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            Cancel
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {scrapeRunsData?.data?.length === 0 && (
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {scrapeRunsData?.data?.map((run: InstagramScrapeRun) => (
+                  <div key={run.id} className="rounded-lg border bg-card p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium">{run.profile?.username || '-'}</span>
+                      <StatusBadge status={run.status} />
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <TypeBadge type={run.type} />
+                      {run.type === 'full_pipeline' && run.status === 'running' && run.error_message && (
+                        <span className="text-xs text-muted-foreground">{run.error_message}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-sm mb-2">
+                      <div>
+                        <span className="text-muted-foreground block text-xs">Fetched</span>
+                        <span className="font-medium">{run.posts_fetched}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-xs">New</span>
+                        <span className="font-medium text-green-600">{run.posts_new}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-xs">Skipped</span>
+                        <span className="font-medium text-gray-500">{run.posts_skipped}</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-2">
+                      Started: {formatDate(run.started_at)}
+                    </div>
+                    {run.status === 'running' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleCancelScrapeRun(run.id)}
+                        disabled={cancelScrapeRunMutation.isPending}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {scrapeRunsData?.data?.length === 0 && (
+                  <div className="text-center text-muted-foreground py-8">
+                    No scrape runs found.
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                        No scrape runs found.
-                      </TableCell>
+                      <TableHead>Profile</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Fetched</TableHead>
+                      <TableHead>New</TableHead>
+                      <TableHead>Skipped</TableHead>
+                      <TableHead>Has More</TableHead>
+                      <TableHead>Started</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {scrapeRunsData?.data?.map((run: InstagramScrapeRun) => (
+                      <TableRow key={run.id}>
+                        <TableCell className="font-medium">
+                          {run.profile?.username || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <TypeBadge type={run.type} />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <StatusBadge status={run.status} />
+                            {run.type === 'full_pipeline' && run.status === 'running' && run.error_message && (
+                              <span className="text-xs text-muted-foreground">{run.error_message}</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{run.posts_fetched}</TableCell>
+                        <TableCell className="text-green-600">{run.posts_new}</TableCell>
+                        <TableCell className="text-gray-500">{run.posts_skipped}</TableCell>
+                        <TableCell>
+                          {run.has_more_pages ? (
+                            <Badge variant="secondary">Yes</Badge>
+                          ) : (
+                            <span className="text-gray-400">No</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDate(run.started_at)}
+                        </TableCell>
+                        <TableCell>
+                          {run.status === 'running' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleCancelScrapeRun(run.id)}
+                              disabled={cancelScrapeRunMutation.isPending}
+                              title="Cancel this run"
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Cancel
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {scrapeRunsData?.data?.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                          No scrape runs found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
 
               {scrapeRunsData && scrapeRunsData.last_page > 1 && (
                 <div className="flex justify-center gap-2 mt-4">
@@ -799,7 +1075,7 @@ export function ScrapeRuns() {
                 setProcessingRunsPage(1);
               }}
             >
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Filter by profile" />
               </SelectTrigger>
               <SelectContent>
@@ -819,61 +1095,114 @@ export function ScrapeRuns() {
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Profile</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>To Process</TableHead>
-                    <TableHead>Processed</TableHead>
-                    <TableHead>Failed</TableHead>
-                    <TableHead>Skipped</TableHead>
-                    <TableHead>Started</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {processingRunsData?.data?.map((run: InstagramProcessingRun) => (
-                    <TableRow key={run.id}>
-                      <TableCell className="font-medium">
-                        {run.profile?.username || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={run.status} />
-                      </TableCell>
-                      <TableCell>{run.posts_to_process}</TableCell>
-                      <TableCell className="text-green-600">{run.posts_processed}</TableCell>
-                      <TableCell className="text-red-600">{run.posts_failed}</TableCell>
-                      <TableCell className="text-gray-500">{run.posts_skipped}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(run.started_at)}
-                      </TableCell>
-                      <TableCell>
-                        {run.status === 'running' && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => handleCancelProcessingRun(run.id)}
-                            disabled={cancelProcessingRunMutation.isPending}
-                            title="Cancel this run"
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            Cancel
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {processingRunsData?.data?.length === 0 && (
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {processingRunsData?.data?.map((run: InstagramProcessingRun) => (
+                  <div key={run.id} className="rounded-lg border bg-card p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium">{run.profile?.username || '-'}</span>
+                      <StatusBadge status={run.status} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                      <div>
+                        <span className="text-muted-foreground block text-xs">To Process</span>
+                        <span className="font-medium">{run.posts_to_process}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-xs">Processed</span>
+                        <span className="font-medium text-green-600">{run.posts_processed}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-xs">Failed</span>
+                        <span className="font-medium text-red-600">{run.posts_failed}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-xs">Skipped</span>
+                        <span className="font-medium text-gray-500">{run.posts_skipped}</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-2">
+                      Started: {formatDate(run.started_at)}
+                    </div>
+                    {run.status === 'running' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-full h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleCancelProcessingRun(run.id)}
+                        disabled={cancelProcessingRunMutation.isPending}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {processingRunsData?.data?.length === 0 && (
+                  <div className="text-center text-muted-foreground py-8">
+                    No processing runs found.
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                        No processing runs found.
-                      </TableCell>
+                      <TableHead>Profile</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>To Process</TableHead>
+                      <TableHead>Processed</TableHead>
+                      <TableHead>Failed</TableHead>
+                      <TableHead>Skipped</TableHead>
+                      <TableHead>Started</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {processingRunsData?.data?.map((run: InstagramProcessingRun) => (
+                      <TableRow key={run.id}>
+                        <TableCell className="font-medium">
+                          {run.profile?.username || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={run.status} />
+                        </TableCell>
+                        <TableCell>{run.posts_to_process}</TableCell>
+                        <TableCell className="text-green-600">{run.posts_processed}</TableCell>
+                        <TableCell className="text-red-600">{run.posts_failed}</TableCell>
+                        <TableCell className="text-gray-500">{run.posts_skipped}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDate(run.started_at)}
+                        </TableCell>
+                        <TableCell>
+                          {run.status === 'running' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleCancelProcessingRun(run.id)}
+                              disabled={cancelProcessingRunMutation.isPending}
+                              title="Cancel this run"
+                            >
+                              <X className="h-3 w-3 mr-1" />
+                              Cancel
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {processingRunsData?.data?.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                          No processing runs found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
 
               {processingRunsData && processingRunsData.last_page > 1 && (
                 <div className="flex justify-center gap-2 mt-4">

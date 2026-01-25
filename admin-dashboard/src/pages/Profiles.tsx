@@ -147,23 +147,23 @@ export function Profiles() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Instagram Profiles</h1>
-        <Button onClick={() => setIsCreateOpen(true)}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold">Instagram Profiles</h1>
+        <Button onClick={() => setIsCreateOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Profile
         </Button>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <Input
           placeholder="Search by username..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-xs"
+          className="w-full sm:max-w-xs"
         />
         <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
@@ -182,25 +182,31 @@ export function Profiles() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Username</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Followers</TableHead>
-              <TableHead>Schedule (Daily)</TableHead>
-              <TableHead>Last Scraped</TableHead>
-              <TableHead>Next Scrape</TableHead>
-              <TableHead className="w-24">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <>
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
             {data?.data.map((profile) => (
-              <TableRow key={profile.id}>
-                <TableCell className="font-medium">@{profile.username}</TableCell>
-                <TableCell>{getStatusBadge(profile.status)}</TableCell>
-                <TableCell>{profile.follower_count.toLocaleString()}</TableCell>
-                <TableCell>
+              <div key={profile.id} className="rounded-lg border bg-card p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-medium">@{profile.username}</span>
+                  {getStatusBadge(profile.status)}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                  <div>
+                    <span className="text-muted-foreground">Followers:</span>
+                    <span className="ml-2 font-medium">{profile.follower_count.toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Last Scraped:</span>
+                    <span className="ml-2 text-xs">
+                      {profile.last_scraped_at
+                        ? new Date(profile.last_scraped_at).toLocaleDateString()
+                        : 'Never'}
+                    </span>
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <span className="text-xs text-muted-foreground block mb-1">Schedule:</span>
                   <div className="flex flex-wrap gap-1">
                     {(profile.scheduled_times || ['13:00', '17:00', '20:00']).map(time => (
                       <Badge key={time} variant="outline" className="text-[10px] px-1 py-0">
@@ -208,45 +214,106 @@ export function Profiles() {
                       </Badge>
                     ))}
                   </div>
-                  <div className="text-[9px] text-muted-foreground mt-1">
-                    {profile.timezone}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {profile.last_scraped_at
-                    ? new Date(profile.last_scraped_at).toLocaleString()
-                    : 'Never'}
-                </TableCell>
-                <TableCell>
-                  {profile.next_scrape_at
-                    ? new Date(profile.next_scrape_at).toLocaleString()
-                    : '-'}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(profile)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setSelectedProfile(profile);
-                        setIsDeleteOpen(true);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
+                </div>
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleEdit(profile)}
+                  >
+                    <Pencil className="h-4 w-4 mr-1" /> Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={() => {
+                      setSelectedProfile(profile);
+                      setIsDeleteOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             ))}
-          </TableBody>
-        </Table>
+            {data?.data.length === 0 && (
+              <div className="text-center text-muted-foreground py-8">
+                No profiles found.
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Username</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Followers</TableHead>
+                  <TableHead>Schedule (Daily)</TableHead>
+                  <TableHead>Last Scraped</TableHead>
+                  <TableHead>Next Scrape</TableHead>
+                  <TableHead className="w-24">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data?.data.map((profile) => (
+                  <TableRow key={profile.id}>
+                    <TableCell className="font-medium">@{profile.username}</TableCell>
+                    <TableCell>{getStatusBadge(profile.status)}</TableCell>
+                    <TableCell>{profile.follower_count.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {(profile.scheduled_times || ['13:00', '17:00', '20:00']).map(time => (
+                          <Badge key={time} variant="outline" className="text-[10px] px-1 py-0">
+                            {time}
+                          </Badge>
+                        ))}
+                      </div>
+                      <div className="text-[9px] text-muted-foreground mt-1">
+                        {profile.timezone}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {profile.last_scraped_at
+                        ? new Date(profile.last_scraped_at).toLocaleString()
+                        : 'Never'}
+                    </TableCell>
+                    <TableCell>
+                      {profile.next_scrape_at
+                        ? new Date(profile.next_scrape_at).toLocaleString()
+                        : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(profile)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedProfile(profile);
+                            setIsDeleteOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       {/* Create Dialog */}

@@ -120,79 +120,131 @@ export function AttributeValues() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/attributes')}>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/attributes')} className="self-start">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">{attribute?.name} Values</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">{attribute?.name} Values</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             Manage values for the {attribute?.name} attribute
           </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)}>
+        <Button onClick={() => setIsCreateOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Value
         </Button>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Value</TableHead>
-            <TableHead>AI Value</TableHead>
-            <TableHead>Score</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="w-24">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {values?.map((val) => (
-            <TableRow key={val.id}>
-              <TableCell className="font-medium">{val.value}</TableCell>
-              <TableCell className="font-mono text-sm text-muted-foreground">
-                {val.ai_value}
-              </TableCell>
-              <TableCell>{val.score}</TableCell>
-              <TableCell>
-                {val.is_temp ? (
-                  <Badge variant="secondary">Temporary</Badge>
-                ) : (
-                  <Badge variant="default">Permanent</Badge>
-                )}
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(val)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setSelectedValue(val);
-                      setIsDeleteOpen(true);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-          {values?.length === 0 && (
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {values?.map((val) => (
+          <div key={val.id} className="rounded-lg border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium">{val.value}</span>
+              {val.is_temp ? (
+                <Badge variant="secondary">Temporary</Badge>
+              ) : (
+                <Badge variant="default">Permanent</Badge>
+              )}
+            </div>
+            <div className="text-sm text-muted-foreground mb-2">
+              <span className="font-mono">{val.ai_value}</span>
+            </div>
+            <div className="text-sm mb-3">
+              <span className="text-muted-foreground">Score:</span>
+              <span className="ml-2 font-medium">{val.score}</span>
+            </div>
+            <div className="flex gap-2 pt-2 border-t">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1"
+                onClick={() => handleEdit(val)}
+              >
+                <Pencil className="h-4 w-4 mr-1" /> Edit
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive"
+                onClick={() => {
+                  setSelectedValue(val);
+                  setIsDeleteOpen(true);
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+        {values?.length === 0 && (
+          <div className="text-center text-muted-foreground py-8">
+            No values found. Add your first value to get started.
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                No values found. Add your first value to get started.
-              </TableCell>
+              <TableHead>Value</TableHead>
+              <TableHead>AI Value</TableHead>
+              <TableHead>Score</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-24">Actions</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {values?.map((val) => (
+              <TableRow key={val.id}>
+                <TableCell className="font-medium">{val.value}</TableCell>
+                <TableCell className="font-mono text-sm text-muted-foreground">
+                  {val.ai_value}
+                </TableCell>
+                <TableCell>{val.score}</TableCell>
+                <TableCell>
+                  {val.is_temp ? (
+                    <Badge variant="secondary">Temporary</Badge>
+                  ) : (
+                    <Badge variant="default">Permanent</Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(val)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedValue(val);
+                        setIsDeleteOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {values?.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  No values found. Add your first value to get started.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Create Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>

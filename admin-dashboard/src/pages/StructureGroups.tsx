@@ -85,14 +85,14 @@ export function StructureGroups() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Structure Output Groups</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">Structure Output Groups</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             Groups used for Typesense CLIP-based image classification
           </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)}>
+        <Button onClick={() => setIsCreateOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Group
         </Button>
@@ -103,56 +103,104 @@ export function StructureGroups() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Used For</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Outputs Count</TableHead>
-              <TableHead className="w-24">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <>
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
             {groups?.map((group) => (
-              <TableRow key={group.id}>
-                <TableCell>
+              <div key={group.id} className="rounded-lg border bg-card p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
                   <Badge variant="outline" className="text-base">
                     {group.used_for}
                   </Badge>
-                </TableCell>
-                <TableCell className="max-w-lg">
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {group.description}
-                  </p>
-                </TableCell>
-                <TableCell>
-                  <Badge>{group.structure_outputs_count || 0}</Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(group)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setSelectedGroup(group);
-                        setIsDeleteOpen(true);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
+                  <Badge>{group.structure_outputs_count || 0} outputs</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
+                  {group.description}
+                </p>
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleEdit(group)}
+                  >
+                    <Pencil className="h-4 w-4 mr-1" /> Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={() => {
+                      setSelectedGroup(group);
+                      setIsDeleteOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             ))}
-          </TableBody>
-        </Table>
+            {groups?.length === 0 && (
+              <div className="text-center text-muted-foreground py-8">
+                No structure output groups found.
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Used For</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Outputs Count</TableHead>
+                  <TableHead className="w-24">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {groups?.map((group) => (
+                  <TableRow key={group.id}>
+                    <TableCell>
+                      <Badge variant="outline" className="text-base">
+                        {group.used_for}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="max-w-lg">
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {group.description}
+                      </p>
+                    </TableCell>
+                    <TableCell>
+                      <Badge>{group.structure_outputs_count || 0}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(group)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedGroup(group);
+                            setIsDeleteOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       {/* Create Dialog */}
