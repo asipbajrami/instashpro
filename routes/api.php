@@ -36,6 +36,7 @@ Route::prefix('v1')->group(function () {
     // Products
     Route::get('products', [ProductController::class, 'index']);
     Route::get('products/search', [ProductController::class, 'search']);
+    Route::get('products/suggestions', [ProductController::class, 'suggestions']);
     Route::get('products/advanced-search', [ProductController::class, 'advancedSearch']);
     Route::get('products/image-search', [ProductController::class, 'imageSearch']);
     Route::post('products/image-upload-search', [ProductController::class, 'imageUploadSearch']);

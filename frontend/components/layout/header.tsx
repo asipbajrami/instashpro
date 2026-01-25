@@ -138,7 +138,6 @@ export function Header() {
     attrValue: '',
   });
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<Category | null>(null);
   const router = useRouter();
   const { selectedGroup, setSelectedGroup } = useGroup();
@@ -201,10 +200,6 @@ export function Header() {
     setExpandedCategory(null);
   }, []);
 
-  const closeMobileMenu = useCallback(() => {
-    setMobileMenuOpen(false);
-  }, []);
-
   // Close desktop menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -226,7 +221,7 @@ export function Header() {
   const categories = categoriesData?.data || [];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 hidden sm:block">
       <div className="w-full flex h-14 items-center">
         {/* Logo - Fixed at far left, hidden on mobile */}
         <Link href="/" className="hidden sm:flex items-center gap-2 shrink-0 pl-4 sm:pl-6 lg:pl-8">
@@ -353,52 +348,9 @@ export function Header() {
           </div>
         )}
 
-        {/* Group Switcher - Mobile (simple, no categories) */}
-        {currentGroup && (
-          <div className="relative md:hidden">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn('gap-1.5', currentGroup.color)}
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {currentGroup.icon}
-              <ChevronDown className="h-3 w-3" />
-            </Button>
-
-            {mobileMenuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={closeMobileMenu}
-                />
-                <div className="absolute top-full left-0 mt-1 z-50 bg-popover border rounded-lg shadow-lg p-1 min-w-[160px] animate-scale-in">
-                  {(Object.entries(groupConfig) as [NonNullable<ProductGroup>, typeof groupConfig.car][]).map(
-                    ([key, config]) => (
-                      <button
-                        key={key}
-                        onClick={() => handleGroupSwitch(key)}
-                        className={cn(
-                          'flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors',
-                          selectedGroup === key
-                            ? 'bg-accent font-medium'
-                            : 'hover:bg-accent/50'
-                        )}
-                      >
-                        <span className={config.color}>{config.icon}</span>
-                        {config.label}
-                      </button>
-                    )
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Search */}
-        <form onSubmit={handleSearch} className="flex-1 min-w-0 max-w-2xl">
-          <div className="relative flex gap-1.5">
+        {/* Search - Desktop */}
+        <form onSubmit={handleSearch} className="hidden sm:flex flex-1 min-w-0 max-w-2xl">
+          <div className="relative flex gap-1.5 w-full">
             <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
@@ -426,11 +378,11 @@ export function Header() {
           </div>
         </form>
 
-        {/* Theme Toggle */}
+        {/* Theme Toggle - Desktop only */}
         <Button
           variant="ghost"
           size="icon"
-          className="shrink-0 h-9 w-9"
+          className="shrink-0 h-9 w-9 hidden sm:flex"
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         >
           <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -440,9 +392,9 @@ export function Header() {
         </div>
       </div>
 
-      {/* Advanced Search Panel */}
+      {/* Advanced Search Panel - Desktop only */}
       {advancedSearchOpen && (
-        <div className="border-t bg-muted/30 animate-collapse-down">
+        <div className="hidden sm:block border-t bg-muted/30 animate-collapse-down">
           <div className="w-full flex">
             <div className="flex-1 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div className="flex items-center justify-between mb-2">
@@ -487,10 +439,10 @@ export function Header() {
                 />
               </div>
               <div className="sm:col-span-3 flex justify-end gap-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
                   className="h-8"
                   onClick={clearAdvancedSearch}
                 >
@@ -506,6 +458,7 @@ export function Header() {
           </div>
         </div>
       )}
-    </header>
+
+      </header>
   );
 }

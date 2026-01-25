@@ -139,8 +139,19 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div className="container mx-auto px-4 py-6">
+      {/* Back button - mobile */}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="mb-4 -ml-2 lg:hidden"
+        onClick={handleBack}
+      >
+        <ChevronLeft className="h-4 w-4 mr-1" />
+        Back
+      </Button>
+
       {/* Breadcrumb */}
-      <Breadcrumb className="mb-6">
+      <Breadcrumb className="mb-6 hidden lg:flex">
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>

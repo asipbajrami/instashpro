@@ -111,6 +111,39 @@ export async function advancedSearchProducts(params: AdvancedSearchParams): Prom
   return data;
 }
 
+// Search Suggestions API
+export interface SearchSuggestion {
+  text: string;
+  type: 'product' | 'category' | 'seller';
+  count: number;
+  id?: number;
+  username?: string;
+}
+
+export interface SuggestionsResponse {
+  success: boolean;
+  data: {
+    products: SearchSuggestion[];
+    categories: SearchSuggestion[];
+    sellers: SearchSuggestion[];
+    popular: SearchSuggestion[];
+  };
+}
+
+export async function getSearchSuggestions(
+  query?: string,
+  group?: 'car' | 'tech',
+  limit = 10
+): Promise<SuggestionsResponse> {
+  const params = new URLSearchParams();
+  if (query) params.append('q', query);
+  if (group) params.append('group', group);
+  params.append('limit', String(limit));
+
+  const { data } = await api.get<SuggestionsResponse>(`/products/suggestions?${params.toString()}`);
+  return data;
+}
+
 // Attributes API
 export interface AttributeValuesResponse {
   success: boolean;

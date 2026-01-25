@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { getProducts, getProduct, searchProducts, advancedSearchProducts, AdvancedSearchParams } from '@/lib/api';
+import { getProducts, getProduct, searchProducts, advancedSearchProducts, getSearchSuggestions, AdvancedSearchParams } from '@/lib/api';
 import { ProductFilters } from '@/lib/types';
 
 export function useProducts(filters: ProductFilters = {}) {
@@ -46,5 +46,14 @@ export function useAdvancedSearch(params: AdvancedSearchParams, enabled = true) 
     queryFn: () => advancedSearchProducts(params),
     enabled: enabled && hasSearchParams,
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useSearchSuggestions(query?: string, group?: 'car' | 'tech', enabled = true) {
+  return useQuery({
+    queryKey: ['products', 'suggestions', query, group],
+    queryFn: () => getSearchSuggestions(query, group),
+    enabled,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 }

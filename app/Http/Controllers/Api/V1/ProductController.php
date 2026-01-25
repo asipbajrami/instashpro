@@ -25,6 +25,172 @@ class ProductController extends Controller
     ) {}
 
     /**
+     * Get search suggestions based on existing products
+     * Returns popular products, categories, and sellers for autocomplete
+     */
+    public function suggestions(Request $request): JsonResponse
+    {
+        $query = $request->get('q', '');
+        $group = $request->get('group');
+        $limit = min($request->get('limit', 10), 20);
+
+        $suggestions = [
+            'products' => [],
+            'categories' => [],
+            'sellers' => [],
+            'popular' => [],
+        ];
+
+        // If no query, return popular/trending items
+        if (empty($query)) {
+            // Get popular product names (most common)
+            $popularQuery = Product::selectRaw('name, COUNT(*) as count')
+                ->whereNotNull('name')
+                ->where('name', '!=', '');
+
+            if ($group) {
+                $popularQuery->where('group', $group);
+            }
+
+            $suggestions['popular'] = $popularQuery
+                ->groupBy('name')
+                ->orderBy('count', 'desc')
+                ->limit($limit)
+                ->get()
+                ->map(fn($item) => [
+                    'text' => $item->name,
+                    'type' => 'product',
+                    'count' => $item->count,
+                ])
+                ->toArray();
+
+            // Get top categories
+            $categoriesQuery = Category::withCount('products')
+                ->where('is_temp', false)
+                ->whereNotNull('parent_id');
+
+            if ($group && $rootCategoryId = $this->getRootCategoryForGroup($group)) {
+                $categoryIds = $this->getCategoryWithDescendants($rootCategoryId);
+                $categoriesQuery->whereIn('id', $categoryIds);
+            }
+
+            $suggestions['categories'] = $categoriesQuery
+                ->orderBy('products_count', 'desc')
+                ->limit(6)
+                ->get()
+                ->map(fn($cat) => [
+                    'id' => $cat->id,
+                    'text' => $cat->name,
+                    'type' => 'category',
+                    'count' => $cat->products_count,
+                ])
+                ->toArray();
+
+            // Get top sellers
+            $sellersQuery = Product::selectRaw('seller_username, COUNT(*) as count')
+                ->whereNotNull('seller_username')
+                ->where('seller_username', '!=', '');
+
+            if ($group) {
+                $sellersQuery->where('group', $group);
+            }
+
+            $suggestions['sellers'] = $sellersQuery
+                ->groupBy('seller_username')
+                ->orderBy('count', 'desc')
+                ->limit(6)
+                ->get()
+                ->map(fn($item) => [
+                    'text' => '@' . $item->seller_username,
+                    'username' => $item->seller_username,
+                    'type' => 'seller',
+                    'count' => $item->count,
+                ])
+                ->toArray();
+
+            return response()->json([
+                'success' => true,
+                'data' => $suggestions,
+            ]);
+        }
+
+        // Search with query
+        $searchTerm = "%{$query}%";
+
+        // Product name suggestions
+        $productsQuery = Product::selectRaw('name, COUNT(*) as count')
+            ->where('name', 'LIKE', $searchTerm)
+            ->whereNotNull('name')
+            ->where('name', '!=', '');
+
+        if ($group) {
+            $productsQuery->where('group', $group);
+        }
+
+        $suggestions['products'] = $productsQuery
+            ->groupBy('name')
+            ->orderBy('count', 'desc')
+            ->limit($limit)
+            ->get()
+            ->map(fn($item) => [
+                'text' => $item->name,
+                'type' => 'product',
+                'count' => $item->count,
+            ])
+            ->toArray();
+
+        // Category suggestions
+        $categoriesQuery = Category::withCount('products')
+            ->where('name', 'LIKE', $searchTerm)
+            ->where('is_temp', false);
+
+        if ($group && $rootCategoryId = $this->getRootCategoryForGroup($group)) {
+            $categoryIds = $this->getCategoryWithDescendants($rootCategoryId);
+            $categoriesQuery->whereIn('id', $categoryIds);
+        }
+
+        $suggestions['categories'] = $categoriesQuery
+            ->orderBy('products_count', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(fn($cat) => [
+                'id' => $cat->id,
+                'text' => $cat->name,
+                'type' => 'category',
+                'count' => $cat->products_count,
+            ])
+            ->toArray();
+
+        // Seller suggestions
+        $sellersQuery = Product::selectRaw('seller_username, COUNT(*) as count')
+            ->where('seller_username', 'LIKE', $searchTerm)
+            ->whereNotNull('seller_username')
+            ->where('seller_username', '!=', '');
+
+        if ($group) {
+            $sellersQuery->where('group', $group);
+        }
+
+        $suggestions['sellers'] = $sellersQuery
+            ->groupBy('seller_username')
+            ->orderBy('count', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(fn($item) => [
+                'text' => '@' . $item->seller_username,
+                'username' => $item->seller_username,
+                'type' => 'seller',
+                'count' => $item->count,
+            ])
+            ->toArray();
+
+        return response()->json([
+            'success' => true,
+            'data' => $suggestions,
+        ]);
+    }
+
+    /**
      * List products with filtering, pagination, and facets
      */
     public function index(Request $request): JsonResponse
