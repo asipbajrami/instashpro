@@ -174,13 +174,13 @@ export default function ProductPage({ params }: ProductPageProps) {
           {product.images.length > 0 ? (
             <>
               {/* Main Carousel */}
-              <Carousel setApi={setApi} className="w-full max-w-lg">
+              <Carousel setApi={setApi} className="w-full lg:max-w-lg">
                 <CarouselContent>
                   {product.images.map((image, index) => (
                     <CarouselItem key={image.id}>
                       <button
                         onClick={() => openModal(index)}
-                        className="relative aspect-4/5 w-full bg-muted rounded-lg overflow-hidden cursor-zoom-in group"
+                        className="relative aspect-square sm:aspect-4/5 w-full bg-muted rounded-lg overflow-hidden cursor-zoom-in group"
                       >
                         <Image
                           src={
@@ -190,7 +190,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                           }
                           alt={`${product.name} - Image ${index + 1}`}
                           fill
-                          className="object-cover"
+                          className="object-contain sm:object-cover"
                           sizes="(max-width: 1024px) 100vw, 50vw"
                           priority={index === 0}
                         />
@@ -222,7 +222,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                     align: 'start',
                     dragFree: true,
                   }}
-                  className="w-full max-w-lg"
+                  className="w-full lg:max-w-lg"
                 >
                   <CarouselContent className="-ml-2">
                     {product.images.map((image, index) => (
