@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, LayoutGrid, ArrowUpDown, Search, Moon, Sun, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, LayoutGrid, ArrowUpDown, Search, Moon, Sun, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useGroup } from '@/components/providers/group-provider';
@@ -379,53 +379,47 @@ function HomeContent() {
 
           {/* Pagination */}
           {pagination && pagination.total_pages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-8 pb-4">
+            <div className="flex items-center justify-center gap-1 mt-8 pb-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground"
+                onClick={() => setPage(1)}
+                disabled={page <= 1}
+              >
+                <ChevronsLeft className="h-3.5 w-3.5" />
+              </Button>
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
+                className="h-8 w-8 ml-1"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
               >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, pagination.total_pages) }).map((_, i) => {
-                  const pageNum = i + 1;
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={page === pageNum ? 'default' : 'ghost'}
-                      size="sm"
-                      className="w-9"
-                      onClick={() => setPage(pageNum)}
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-                {pagination.total_pages > 5 && (
-                  <>
-                    <span className="px-2 text-muted-foreground">...</span>
-                    <Button
-                      variant={page === pagination.total_pages ? 'default' : 'ghost'}
-                      size="sm"
-                      className="w-9"
-                      onClick={() => setPage(pagination.total_pages)}
-                    >
-                      {pagination.total_pages}
-                    </Button>
-                  </>
-                )}
-              </div>
+
+              <span className="text-sm text-muted-foreground px-3 min-w-[60px] text-center">
+                {page} / {pagination.total_pages}
+              </span>
+
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
+                className="h-8 w-8 mr-1"
                 onClick={() => setPage((p) => Math.min(pagination.total_pages, p + 1))}
                 disabled={page >= pagination.total_pages}
               >
-                Next
-                <ChevronRight className="h-4 w-4 ml-1" />
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground"
+                onClick={() => setPage(pagination.total_pages)}
+                disabled={page >= pagination.total_pages}
+              >
+                <ChevronsRight className="h-3.5 w-3.5" />
               </Button>
             </div>
           )}

@@ -14,7 +14,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -90,27 +90,47 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
       {/* Pagination */}
       {pagination && pagination.total_pages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-8">
+        <div className="flex items-center justify-center gap-1 mt-8">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground"
+            onClick={() => setPage(1)}
+            disabled={page <= 1}
+          >
+            <ChevronsLeft className="h-3.5 w-3.5" />
+          </Button>
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
+            className="h-8 w-8 ml-1"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
           >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Previous
+            <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm text-muted-foreground px-4">
-            Page {page} of {pagination.total_pages}
+
+          <span className="text-sm text-muted-foreground px-3 min-w-[60px] text-center">
+            {page} / {pagination.total_pages}
           </span>
+
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
+            className="h-8 w-8 mr-1"
             onClick={() => setPage((p) => Math.min(pagination.total_pages, p + 1))}
             disabled={page >= pagination.total_pages}
           >
-            Next
-            <ChevronRight className="h-4 w-4 ml-1" />
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground"
+            onClick={() => setPage(pagination.total_pages)}
+            disabled={page >= pagination.total_pages}
+          >
+            <ChevronsRight className="h-3.5 w-3.5" />
           </Button>
         </div>
       )}
