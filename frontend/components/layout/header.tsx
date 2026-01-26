@@ -184,7 +184,6 @@ export function Header() {
   const handleGroupSwitch = (group: ProductGroup) => {
     setSelectedGroup(group);
     setDesktopMenuOpen(false);
-    setMobileMenuOpen(false);
     setExpandedCategory(null);
     router.push('/');
   };
