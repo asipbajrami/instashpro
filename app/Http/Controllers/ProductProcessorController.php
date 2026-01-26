@@ -433,6 +433,18 @@ class ProductProcessorController extends Controller
             }
         }
 
+        $mappedCount = count($ids);
+        $totalCount = count($imageMap);
+
+        if ($mappedCount < $totalCount) {
+            Log::info('Product using subset of post images', [
+                'mapped_images' => $mappedCount,
+                'total_images' => $totalCount,
+                'sources_returned' => $sources,
+                'available_sources' => array_keys($imageMap),
+            ]);
+        }
+
         return implode('_', array_unique($ids));
     }
 

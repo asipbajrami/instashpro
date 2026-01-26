@@ -119,7 +119,7 @@ class StructureOutput extends Model
                                             'type' => 'string',
                                             'enum' => $sourceEnum ?: ['image_1']
                                         ],
-                                        'description' => 'Image references where this product appears'
+                                        'description' => 'ALL image references where this product is visible. Include every image showing the product: main shots, detail shots, different angles, packaging, price tags, etc. Must include all relevant images, not just the primary one.'
                                     ],
                                     'confidence' => [
                                         'type' => 'string',

@@ -4,6 +4,7 @@ import './globals.css';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { GroupProvider } from '@/components/providers/group-provider';
 import { ThemeProvider } from '@/components/providers/theme-provider';
+import { PostHogProvider } from '@/components/providers/posthog-provider';
 import { AppShell } from '@/components/layout/app-shell';
 
 const geistSans = Geist({
@@ -37,7 +38,9 @@ export default function RootLayout({
         >
           <QueryProvider>
             <GroupProvider>
-              <AppShell>{children}</AppShell>
+              <PostHogProvider>
+                <AppShell>{children}</AppShell>
+              </PostHogProvider>
             </GroupProvider>
           </QueryProvider>
         </ThemeProvider>
