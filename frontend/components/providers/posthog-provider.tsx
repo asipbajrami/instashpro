@@ -7,7 +7,8 @@ import { useEffect, Suspense } from 'react'
 
 if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
+    api_host: '/ingest', // Use reverse proxy to bypass ad blockers
+    ui_host: 'https://us.posthog.com', // Required for toolbar features
     person_profiles: 'identified_only',
     capture_pageview: false, // We capture manually for SPA navigation
     capture_pageleave: true,

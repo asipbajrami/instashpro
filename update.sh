@@ -15,25 +15,29 @@ echo "--- Updating Repository ---"
 git fetch origin
 git reset --hard origin/main
 
-# 2. Rebuild and Restart Docker
+# 2. Rebuild Frontend without cache (ensures env vars like PostHog are embedded)
+echo "--- Rebuilding Frontend (no-cache) ---"
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build --no-cache frontend
+
+# 3. Rebuild and Restart All Containers
 echo "--- Rebuilding and Restarting Containers ---"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build --remove-orphans
 
-# 3. Database Migrations
+# 4. Database Migrations
 echo "--- Running Database Migrations ---"
 docker compose -f "$COMPOSE_FILE" exec -T backend php artisan migrate --force
 
-# 4. Run Seeders (only if needed - uncomment)
+# 5. Run Seeders (only if needed - uncomment)
 # echo "--- Running Database Seeders ---"
 # docker compose -f "$COMPOSE_FILE" exec -T backend php artisan db:seed --force
 
-# 5. Clear Caches
+# 6. Clear Caches
 echo "--- Clearing Caches ---"
 docker compose -f "$COMPOSE_FILE" exec -T backend php artisan config:cache
 docker compose -f "$COMPOSE_FILE" exec -T backend php artisan route:cache
 docker compose -f "$COMPOSE_FILE" exec -T backend php artisan view:cache
 
-# 6. Refresh Master Nginx DNS Cache
+# 7. Refresh Master Nginx DNS Cache
 if docker ps | grep -q "$MASTER_NGINX_CONTAINER"; then
     echo "--- Refreshing Master Nginx ---"
     docker restart "$MASTER_NGINX_CONTAINER"
@@ -42,8 +46,3 @@ fi
 
 echo ""
 echo "Update Complete! InstashPro is now in sync."
-
-
-
-
-
