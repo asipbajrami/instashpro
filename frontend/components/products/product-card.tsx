@@ -10,8 +10,24 @@ interface ProductCardProps {
   product: Product;
 }
 
+// Format date as "Jan 15" or "Jan 15, 2024" if different year
+function formatPostDate(dateString: string | null): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const sameYear = date.getFullYear() === now.getFullYear();
+  
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  });
+}
+
 export function ProductCard({ product }: ProductCardProps) {
   const primaryImage = product.images.find((img) => img.is_primary) || product.images[0];
+  // Use thumbnail (mid-quality) for grid view, fall back to primary image
+  const thumbnailUrl = product.thumbnail_url || primaryImage?.url;
   const rawPrice = parseFloat(product.price) || 0;
   const rawDiscountPrice = product.discount_price ? parseFloat(product.discount_price) : null;
 
@@ -24,15 +40,16 @@ export function ProductCard({ product }: ProductCardProps) {
     ? Math.round(((price - discountPrice) / price) * 100)
     : 0;
   const currency = product.currency || 'ALL';
+  const postDate = formatPostDate(product.published_at);
 
   return (
     <Link href={`/products/${product.id}`} className="group block h-full">
       <div className="overflow-hidden rounded-xl border bg-card transition-all hover:shadow-lg hover:border-primary/20 h-full flex flex-col">
-        {/* Image */}
+        {/* Image - uses thumbnail (mid-quality) for faster loading */}
         <div className="relative aspect-square bg-muted overflow-hidden">
-          {primaryImage ? (
+          {thumbnailUrl ? (
             <Image
-              src={primaryImage.url.startsWith('/') ? `http://localhost:8000${primaryImage.url}` : primaryImage.url}
+              src={thumbnailUrl.startsWith('/') ? `http://localhost:8000${thumbnailUrl}` : thumbnailUrl}
               alt={product.name}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -77,9 +94,9 @@ export function ProductCard({ product }: ProductCardProps) {
                 @{product.seller_username}
               </p>
             )}
-            {product.categories.length > 0 && (
+            {postDate && (
               <p className="text-xs text-muted-foreground truncate text-right flex-shrink-0">
-                {product.categories[0].name}
+                {postDate}
               </p>
             )}
           </div>

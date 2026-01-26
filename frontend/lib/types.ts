@@ -27,11 +27,13 @@ export interface Product {
   discount_price: string;
   monthly_price: string;
   currency: string;
+  thumbnail_url: string | null;
   images: ProductImage[];
   categories: ProductCategory[];
   attributes: ProductAttribute[];
   instagram_link: string | null;
   seller_username: string | null;
+  published_at: string | null;
   created_at: string;
 }
 

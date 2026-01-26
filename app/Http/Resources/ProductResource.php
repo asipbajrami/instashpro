@@ -24,6 +24,7 @@ class ProductResource extends JsonResource
             'discount_price' => $this->discount_price,
             'monthly_price' => $this->monthly_price,
             'currency' => $this->currency ?? 'ALL',
+            'thumbnail_url' => $this->getThumbnailUrl(),
             'images' => $this->getImages(),
             'categories' => $this->whenLoaded('categories', function () {
                 return $this->categories->map(fn ($cat) => [
@@ -41,6 +42,7 @@ class ProductResource extends JsonResource
             }),
             'instagram_link' => $this->getInstagramLink(),
             'seller_username' => $this->seller_username,
+            'published_at' => $this->published_at?->toISOString(),
             'created_at' => $this->created_at?->toISOString(),
         ];
     }
@@ -126,5 +128,39 @@ class ProductResource extends JsonResource
         }
 
         return $images;
+    }
+
+    /**
+     * Get thumbnail URL (mid-quality image for grid views)
+     */
+    protected function getThumbnailUrl(): ?string
+    {
+        // First try to get a mid-quality image from media
+        if (!empty($this->instagram_media_ids)) {
+            $mediaIds = array_filter(explode('_', $this->instagram_media_ids));
+            if (!empty($mediaIds)) {
+                // Look for mid-quality version of first media
+                $firstMedia = InstagramMedia::find($mediaIds[0]);
+                if ($firstMedia) {
+                    // Try to find mid-quality version
+                    $midMedia = InstagramMedia::where('instagram_post_id', $firstMedia->instagram_post_id)
+                        ->where('media_id', $firstMedia->media_id)
+                        ->whereIn('type', ['image_mid', 'carousel_mid'])
+                        ->first();
+                    
+                    if ($midMedia && $midMedia->media_path) {
+                        return url('/storage/' . $midMedia->media_path);
+                    }
+                    
+                    // Fall back to original media if no mid version
+                    if ($firstMedia->media_path) {
+                        return url('/storage/' . $firstMedia->media_path);
+                    }
+                }
+            }
+        }
+        
+        // Fall back to denormalized thumbnail_url
+        return $this->thumbnail_url;
     }
 }
