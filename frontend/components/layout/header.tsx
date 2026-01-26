@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, ShoppingBag, Car, Smartphone, ChevronDown, ChevronRight, Moon, Sun, SlidersHorizontal, X } from 'lucide-react';
+import { Search, ShoppingBag, Car, Smartphone, ChevronDown, ChevronRight, Moon, Sun, SlidersHorizontal, X, Tag } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useGroup, ProductGroup } from '@/components/providers/group-provider';
 import { useCategories } from '@/hooks/use-categories';
+import { useSearchSuggestions } from '@/hooks/use-products';
 import { Category } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -130,25 +131,42 @@ function CategoryMegaMenu({
 }
 
 export function Header() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get('q') || '';
+
+  const [searchQuery, setSearchQuery] = useState(urlQuery);
   const [advancedSearchOpen, setAdvancedSearchOpen] = useState(false);
   const [advancedFields, setAdvancedFields] = useState({
-    name: '',
-    seller: '',
-    attrValue: '',
+    name: searchParams.get('name') || '',
+    seller: searchParams.get('seller') || '',
+    attrValue: searchParams.get('attr_value') || '',
   });
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<Category | null>(null);
-  const router = useRouter();
+  const [searchFocused, setSearchFocused] = useState(false);
+
+  // Sync search query with URL changes
+  useEffect(() => {
+    setSearchQuery(urlQuery);
+  }, [urlQuery]);
   const { selectedGroup, setSelectedGroup } = useGroup();
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories(selectedGroup || undefined);
+  const { data: suggestionsData } = useSearchSuggestions(
+    searchQuery || undefined,
+    selectedGroup || undefined,
+    searchFocused
+  );
   const { theme, setTheme } = useTheme();
   const desktopMenuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const activeAdvancedFilters = Object.values(advancedFields).filter(Boolean).length;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setSearchFocused(false);
+
     const params = new URLSearchParams();
 
     if (searchQuery.trim()) {
@@ -165,9 +183,7 @@ export function Header() {
     }
 
     const queryString = params.toString();
-    if (queryString) {
-      router.push(`/?${queryString}`);
-    }
+    router.push(queryString ? `/?${queryString}` : '/');
   };
 
   const clearAdvancedSearch = () => {
@@ -218,6 +234,47 @@ export function Header() {
 
   const currentGroup = selectedGroup ? groupConfig[selectedGroup] : null;
   const categories = categoriesData?.data || [];
+  const suggestions = suggestionsData?.data;
+  const hasSuggestions = suggestions?.products?.length || suggestions?.categories?.length || suggestions?.sellers?.length || suggestions?.popular?.length;
+  const showSuggestions = searchFocused && (hasSuggestions || searchQuery.length > 0);
+
+  // Close search suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setSearchFocused(false);
+      }
+    };
+
+    if (searchFocused) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [searchFocused]);
+
+  const handleSuggestionClick = (query: string) => {
+    setSearchFocused(false);
+    router.push(`/?q=${encodeURIComponent(query)}`);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSearchFocused(false);
+    router.push('/');
+  };
+
+  const handleCategorySuggestionClick = (categoryId: number) => {
+    setSearchFocused(false);
+    router.push(`/?category_id=${categoryId}`);
+  };
+
+  const handleSellerSuggestionClick = (username: string) => {
+    setSearchFocused(false);
+    router.push(`/?profile=${username}`);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 hidden sm:block">
@@ -348,34 +405,138 @@ export function Header() {
         )}
 
         {/* Search - Desktop */}
-        <form onSubmit={handleSearch} className="hidden sm:flex flex-1 min-w-0 max-w-2xl">
-          <div className="relative flex gap-1.5 w-full">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <Input
-                type="search"
-                placeholder={`Search ${currentGroup?.label.toLowerCase() || 'products'}...`}
-                className="pl-9 pr-3 h-9 w-full bg-muted/80 dark:bg-muted/70 border-0 focus-visible:ring-1"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+        <div className="hidden sm:block flex-1 min-w-0 max-w-2xl relative" ref={searchRef}>
+          <form onSubmit={handleSearch} className="flex">
+            <div className="relative flex gap-1.5 w-full">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="text"
+                  placeholder={`Search ${currentGroup?.label.toLowerCase() || 'products'}...`}
+                  className="pl-9 pr-8 h-9 w-full bg-muted/80 dark:bg-muted/70 border-0 focus-visible:ring-1"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={handleClearSearch}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant={advancedSearchOpen ? "default" : "ghost"}
+                size="icon"
+                className="h-9 w-9 shrink-0 relative"
+                onClick={() => setAdvancedSearchOpen(!advancedSearchOpen)}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                {activeAdvancedFilters > 0 && (
+                  <Badge className="absolute -top-1.5 -right-1.5 h-4 w-4 p-0 flex items-center justify-center text-[10px]">
+                    {activeAdvancedFilters}
+                  </Badge>
+                )}
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant={advancedSearchOpen ? "default" : "ghost"}
-              size="icon"
-              className="h-9 w-9 shrink-0 relative"
-              onClick={() => setAdvancedSearchOpen(!advancedSearchOpen)}
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              {activeAdvancedFilters > 0 && (
-                <Badge className="absolute -top-1.5 -right-1.5 h-4 w-4 p-0 flex items-center justify-center text-[10px]">
-                  {activeAdvancedFilters}
-                </Badge>
+          </form>
+
+          {/* Search Suggestions Dropdown */}
+          {showSuggestions && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-lg shadow-lg overflow-hidden z-50 max-h-[400px] overflow-y-auto">
+              {/* Products */}
+              {searchQuery && suggestions?.products && suggestions.products.length > 0 && (
+                <div className="py-1">
+                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">Products</p>
+                  {suggestions.products.slice(0, 5).map((item, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(item.text)}
+                      className="flex items-center gap-3 w-full px-3 py-2 hover:bg-muted/50 text-left"
+                    >
+                      <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm flex-1 truncate">{item.text}</span>
+                      <span className="text-xs text-muted-foreground">{item.count}</span>
+                    </button>
+                  ))}
+                </div>
               )}
-            </Button>
-          </div>
-        </form>
+
+              {/* Popular (when no query) */}
+              {!searchQuery && suggestions?.popular && suggestions.popular.length > 0 && (
+                <div className="py-1">
+                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">Popular</p>
+                  {suggestions.popular.slice(0, 5).map((item, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(item.text)}
+                      className="flex items-center gap-3 w-full px-3 py-2 hover:bg-muted/50 text-left"
+                    >
+                      <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm flex-1 truncate">{item.text}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Categories */}
+              {suggestions?.categories && suggestions.categories.length > 0 && (
+                <div className="py-1 border-t">
+                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">Categories</p>
+                  {suggestions.categories.slice(0, 4).map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleCategorySuggestionClick(item.id!)}
+                      className="flex items-center gap-3 w-full px-3 py-2 hover:bg-muted/50 text-left"
+                    >
+                      <Tag className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm flex-1 truncate">{item.text}</span>
+                      <span className="text-xs text-muted-foreground">{item.count}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Sellers */}
+              {suggestions?.sellers && suggestions.sellers.length > 0 && (
+                <div className="py-1 border-t">
+                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">Sellers</p>
+                  {suggestions.sellers.slice(0, 4).map((item, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSellerSuggestionClick(item.username!)}
+                      className="flex items-center gap-3 w-full px-3 py-2 hover:bg-muted/50 text-left"
+                    >
+                      <div className="h-6 w-6 rounded-full bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center text-white text-xs font-medium shrink-0">
+                        {item.username?.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-sm flex-1 truncate">{item.text}</span>
+                      <span className="text-xs text-muted-foreground">{item.count}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Search for query - when no matching suggestions */}
+              {searchQuery && !suggestions?.products?.length && !suggestions?.categories?.length && !suggestions?.sellers?.length && (
+                <div className="py-1">
+                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">Search for</p>
+                  <button
+                    onClick={() => handleSuggestionClick(searchQuery)}
+                    className="flex items-center gap-3 w-full px-3 py-2 hover:bg-muted/50 text-left"
+                  >
+                    <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm flex-1 truncate">&quot;{searchQuery}&quot;</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Theme Toggle - Desktop only */}
         <Button

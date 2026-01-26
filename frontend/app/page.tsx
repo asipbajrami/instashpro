@@ -17,7 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, LayoutGrid, ArrowUpDown, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutGrid, ArrowUpDown, Search, Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useGroup } from '@/components/providers/group-provider';
 import { AdvancedSearchParams } from '@/lib/api';
@@ -135,6 +136,7 @@ function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { selectedGroup } = useGroup();
+  const { theme, setTheme } = useTheme();
   const previousGroup = useRef(selectedGroup);
 
   // Derive filters directly from URL - single source of truth
@@ -243,7 +245,7 @@ function HomeContent() {
       <main className="flex-1 flex flex-col min-w-0">
         <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
           {/* Mobile header */}
-          <div className="flex flex-col gap-2 mb-4 lg:hidden">
+          <div className="flex flex-col gap-2 mb-4 sm:hidden">
             {/* Top row - Filter and Search Bar */}
             <div className="flex items-center gap-2">
               <FilterSheet
@@ -259,6 +261,15 @@ function HomeContent() {
                   </span>
                 </div>
               </Link>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              >
+                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              </Button>
             </div>
             {/* Warning */}
             <div className="bg-muted/30 border rounded-lg py-1 px-2">

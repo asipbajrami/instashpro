@@ -347,7 +347,7 @@ export function ProductFilters({
         <div key={category.id}>
           <div
             className={cn(
-              'flex items-center gap-1.5 py-1.5 px-2 rounded-md cursor-pointer transition-all group',
+              'flex items-center gap-1.5 py-1.5 px-2 rounded-md cursor-pointer transition-all group min-w-0',
               isSelected
                 ? 'bg-primary text-primary-foreground'
                 : 'hover:bg-muted',
@@ -374,7 +374,7 @@ export function ProductFilters({
               </button>
             )}
             <span className={cn(
-              'text-sm flex-1',
+              'text-sm flex-1 truncate min-w-0',
               isSelected && 'font-medium',
               !hasChildren && 'ml-5'
             )}>
@@ -382,7 +382,7 @@ export function ProductFilters({
             </span>
             {category.product_count > 0 && (
               <span className={cn(
-                'text-xs tabular-nums',
+                'text-xs tabular-nums shrink-0',
                 isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'
               )}>
                 {category.product_count}
@@ -475,7 +475,7 @@ export function ProductFilters({
               ))}
             </div>
           ) : (
-            <div className="space-y-0.5 max-h-[300px] overflow-y-auto pr-0 scrollbar-hide pt-2 -mx-3 px-4 sm:px-6 lg:px-8">
+            <div className="space-y-0.5 max-h-[300px] overflow-y-auto scrollbar-hide pt-2 -mx-3 px-4 sm:px-6 lg:px-8">
               {categoriesData?.data?.[0]?.children && renderCategoryTree(categoriesData.data[0].children)}
             </div>
           )}

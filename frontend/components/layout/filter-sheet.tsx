@@ -8,15 +8,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { SlidersHorizontal, Search, Moon, Sun, Car, Smartphone } from 'lucide-react';
+import { SlidersHorizontal, Car, Smartphone } from 'lucide-react';
 import { ProductFilters, FilterState } from '@/components/products/product-filters';
 import { Facets } from '@/lib/types';
 import { useState } from 'react';
-import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
 import { useGroup, ProductGroup } from '@/components/providers/group-provider';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 
 interface FilterSheetProps {
   filters: FilterState;
@@ -31,7 +29,6 @@ const groupConfig: Record<NonNullable<ProductGroup>, { label: string; icon: Reac
 
 export function FilterSheet({ filters, onFiltersChange, facets }: FilterSheetProps) {
   const [open, setOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
   const router = useRouter();
   const { selectedGroup, setSelectedGroup } = useGroup();
 
@@ -59,34 +56,13 @@ export function FilterSheet({ filters, onFiltersChange, facets }: FilterSheetPro
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[300px] sm:w-[350px] flex flex-col">
-        <SheetHeader>
+      <SheetContent side="left" className="w-[300px] sm:w-[350px] flex flex-col gap-0">
+        <SheetHeader className="pb-2">
           <SheetTitle>Filters</SheetTitle>
         </SheetHeader>
 
-        {/* Quick Actions - Search & Theme */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b">
-          <Link href="/search" className="flex-1" onClick={() => setOpen(false)}>
-            <Button variant="outline" className="w-full justify-start gap-2">
-              <Search className="h-4 w-4" />
-              Search products...
-            </Button>
-          </Link>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          >
-            <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          </Button>
-        </div>
-
         {/* Group Switcher */}
-        <div className="px-4 py-3 border-b">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-            Section
-          </p>
+        <div className="px-4 pb-3 border-b">
           <div className="grid grid-cols-2 gap-2">
             {(Object.entries(groupConfig) as [NonNullable<ProductGroup>, typeof groupConfig.car][]).map(
               ([key, config]) => (
