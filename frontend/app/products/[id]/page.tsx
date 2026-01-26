@@ -394,7 +394,7 @@ export default function ProductPage({ params }: ProductPageProps) {
       {/* Fullscreen Image Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent
-          className="p-0 bg-black/40 backdrop-blur-xl border-none shadow-2xl w-screen max-w-screen h-[100dvh] max-h-[100dvh] flex flex-col items-stretch outline-none rounded-none sm:rounded-2xl sm:w-[99.5vw] sm:max-w-[99.5vw] sm:h-[99vh] sm:max-h-[99vh] overflow-hidden m-0"
+          className="p-0 bg-black/90 backdrop-blur-xl border border-white/10 shadow-2xl w-screen max-w-screen h-[100dvh] max-h-[100dvh] flex flex-col items-stretch outline-none rounded-none sm:rounded-2xl sm:w-[85vw] sm:max-w-[1400px] sm:h-[90vh] sm:max-h-[90vh] overflow-hidden m-0"
           showCloseButton={false}
         >
           <VisuallyHidden>
@@ -402,9 +402,9 @@ export default function ProductPage({ params }: ProductPageProps) {
           </VisuallyHidden>
 
           {/* Header area for counter and buttons */}
-          <div className="w-full flex items-center justify-between px-3 py-2 sm:p-2.5 border-b border-white/5 shrink-0 safe-area-inset-top safe-area-inset-left safe-area-inset-right">
+          <div className="w-full flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 border-b border-white/10 bg-black/30 shrink-0 safe-area-inset-top safe-area-inset-left safe-area-inset-right">
             {/* Image counter */}
-            <div className="text-white text-[10px] sm:text-xs font-semibold bg-white/10 px-2 sm:px-4 py-1 sm:py-2 rounded-full backdrop-blur-md border border-white/10">
+            <div className="text-white text-xs sm:text-sm font-semibold bg-white/15 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full backdrop-blur-md border border-white/20">
               {modalIndex + 1} / {product.images.length}
             </div>
 
@@ -435,10 +435,10 @@ export default function ProductPage({ params }: ProductPageProps) {
               <Button
                 variant="secondary"
                 size="icon"
-                className="rounded-full bg-white/15 text-white hover:bg-white/25 border-none backdrop-blur-md h-9 w-9 sm:h-10 sm:w-10"
+                className="rounded-full bg-white/20 text-white hover:bg-white/30 border border-white/20 backdrop-blur-md h-9 w-9 sm:h-11 sm:w-11"
                 onClick={() => setModalOpen(false)}
               >
-                <X className="h-5 w-5 sm:h-5 sm:w-5" />
+                <X className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
             </div>
           </div>
