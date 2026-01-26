@@ -394,27 +394,23 @@ export default function ProductPage({ params }: ProductPageProps) {
       {/* Fullscreen Image Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent
-          className="p-0 bg-black/90 backdrop-blur-xl border border-white/10 shadow-2xl w-screen max-w-screen h-[100dvh] max-h-[100dvh] flex flex-col items-stretch outline-none rounded-none sm:rounded-2xl sm:w-[85vw] sm:max-w-[1400px] sm:h-[90vh] sm:max-h-[90vh] overflow-hidden m-0"
+          className="p-0 bg-black border-0 w-[90vw] max-w-4xl"
           showCloseButton={false}
         >
           <VisuallyHidden>
             <DialogTitle>Product Images</DialogTitle>
           </VisuallyHidden>
 
-          {/* Header area for counter and buttons */}
-          <div className="w-full flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 border-b border-white/10 bg-black/30 shrink-0 safe-area-inset-top safe-area-inset-left safe-area-inset-right">
-            {/* Image counter */}
-            <div className="text-white text-xs sm:text-sm font-semibold bg-white/15 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full backdrop-blur-md border border-white/20">
+          {/* Header */}
+          <div className="flex items-center justify-between p-3 border-b border-white/10">
+            <div className="text-white text-sm font-medium">
               {modalIndex + 1} / {product.images.length}
             </div>
-
-            {/* Action buttons */}
-            <div className="flex gap-2 sm:gap-3">
-              {/* Download button */}
+            <div className="flex gap-2">
               <Button
-                variant="secondary"
+                variant="ghost"
                 size="icon"
-                className="rounded-full bg-white/10 text-white hover:bg-white/20 border-none backdrop-blur-md h-9 w-9 sm:h-10 sm:w-10"
+                className="text-white hover:bg-white/10 h-8 w-8"
                 asChild
               >
                 <a
@@ -423,97 +419,65 @@ export default function ProductPage({ params }: ProductPageProps) {
                       ? `http://localhost:8000${product.images[modalIndex]?.url}`
                       : product.images[modalIndex]?.url
                   }
-                  download={`${product.name}-image-${modalIndex + 1}.jpg`}
+                  download
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Download className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <Download className="h-4 w-4" />
                 </a>
               </Button>
-
-              {/* Close button */}
               <Button
-                variant="secondary"
+                variant="ghost"
                 size="icon"
-                className="rounded-full bg-white/20 text-white hover:bg-white/30 border border-white/20 backdrop-blur-md h-9 w-9 sm:h-11 sm:w-11"
+                className="text-white hover:bg-white/10 h-8 w-8"
                 onClick={() => setModalOpen(false)}
               >
-                <X className="h-5 w-5 sm:h-6 sm:w-6" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          {/* Modal Carousel - tap background to close on mobile */}
-          <div
-            className="relative w-full px-1 py-1 sm:px-2 sm:py-2 flex items-center justify-center flex-1 min-h-0 overflow-hidden"
-            onClick={(e) => {
-              // Close modal when clicking the background (not the image) on mobile
-              if (e.target === e.currentTarget && window.innerWidth < 640) {
-                setModalOpen(false);
-              }
-            }}
-          >
+          {/* Image */}
+          <div className="relative">
             <Carousel
               setApi={setModalApi}
               opts={{ startIndex: modalIndex }}
-              className="w-full h-full"
             >
-              <CarouselContent className="ml-0 h-full">
+              <CarouselContent>
                 {product.images.map((image, index) => (
-                  <CarouselItem key={image.id} className="pl-0 h-full">
-                    <div
-                      className="relative w-full h-full flex items-center justify-center p-0.5 sm:p-1"
-                      onClick={(e) => {
-                        // Close on tap outside image on mobile
-                        if (e.target === e.currentTarget && window.innerWidth < 640) {
-                          setModalOpen(false);
-                        }
-                      }}
-                    >
-                      <div
-                        className="relative w-full h-full flex items-center justify-center"
-                        onClick={(e) => {
-                          if (e.target === e.currentTarget && window.innerWidth < 640) {
-                            setModalOpen(false);
-                          }
-                        }}
-                      >
-                        <img
-                          src={
-                            image.url.startsWith('/')
-                              ? `http://localhost:8000${image.url}`
-                              : image.url
-                          }
-                          alt={`${product.name} - Image ${index + 1}`}
-                          className="object-contain w-full h-full pointer-events-none sm:pointer-events-auto"
-                          style={{ maxWidth: '100%', maxHeight: '100%' }}
-                        />
-                      </div>
-                    </div>
+                  <CarouselItem key={image.id} className="flex items-center justify-center">
+                    <img
+                      src={
+                        image.url.startsWith('/')
+                          ? `http://localhost:8000${image.url}`
+                          : image.url
+                      }
+                      alt={`${product.name} - Image ${index + 1}`}
+                      className="max-h-[70vh] w-auto object-contain"
+                    />
                   </CarouselItem>
                 ))}
               </CarouselContent>
               {product.images.length > 1 && (
                 <>
-                  <CarouselPrevious className="left-1 sm:left-4 bg-white/10 hover:bg-white/20 border-white/10 border-2 text-white h-8 w-8 sm:h-12 sm:w-12 rounded-full transition-all opacity-100 disabled:opacity-20" />
-                  <CarouselNext className="right-1 sm:right-4 bg-white/10 hover:bg-white/20 border-white/10 border-2 text-white h-8 w-8 sm:h-12 sm:w-12 rounded-full transition-all opacity-100 disabled:opacity-20" />
+                  <CarouselPrevious className="left-2 bg-black/50 hover:bg-black/70 border-0 text-white" />
+                  <CarouselNext className="right-2 bg-black/50 hover:bg-black/70 border-0 text-white" />
                 </>
               )}
             </Carousel>
           </div>
 
-          {/* Modal Thumbnails - Always rendered to maintain consistent spacing */}
-          <div className={`w-full bg-white/5 backdrop-blur-xl py-1 sm:py-1.5 px-2 sm:px-4 border-t border-white/10 shrink-0 ${product.images.length > 1 ? '' : 'invisible'}`}>
-            <div className="flex gap-1 sm:gap-1.5 justify-start sm:justify-center items-center overflow-x-auto overflow-y-visible scrollbar-hide pb-0.5 sm:pb-1 pt-1 sm:pt-1.5">
+          {/* Thumbnails */}
+          {product.images.length > 1 && (
+            <div className="p-3 border-t border-white/10 flex justify-center gap-2 overflow-x-auto">
               {product.images.map((image, index) => (
                 <button
                   key={image.id}
                   onClick={() => modalApi?.scrollTo(index)}
-                  type="button"
-                  className={`relative shrink-0 aspect-square w-16 sm:w-20 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
+                  className={`relative w-12 h-12 rounded overflow-hidden border-2 shrink-0 transition-all ${
                     index === modalIndex
-                      ? 'border-white scale-110 shadow-2xl shadow-white/10'
-                      : 'border-white/10 hover:border-white/40 hover:scale-105'
+                      ? 'border-white'
+                      : 'border-transparent opacity-60 hover:opacity-100'
                   }`}
                 >
                   <Image
@@ -525,12 +489,12 @@ export default function ProductPage({ params }: ProductPageProps) {
                     alt={`Thumbnail ${index + 1}`}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 640px) 48px, 64px"
+                    sizes="48px"
                   />
                 </button>
               ))}
             </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
