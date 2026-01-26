@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, ArrowLeft, Tag, Loader2, X } from 'lucide-react';
+import { Search, Tag, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useGroup } from '@/components/providers/group-provider';
@@ -62,14 +62,6 @@ function SearchContent() {
       {/* Header - Mobile only (desktop uses main header) */}
       <div className="sticky top-0 z-50 bg-background border-b pt-[env(safe-area-inset-top)] sm:hidden">
         <div className="flex items-center gap-2 px-3 py-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 h-8 w-8"
-            onClick={() => router.back()}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
           <form onSubmit={handleSearch} className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -77,7 +69,7 @@ function SearchContent() {
                 ref={inputRef}
                 type="text"
                 placeholder={`Search ${groupLabel}...`}
-                className="pl-9 pr-9 h-10 bg-muted/50 border-0 rounded-lg"
+                className="pl-9 pr-9 h-9 bg-muted/50 border-0 rounded-lg"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -92,6 +84,14 @@ function SearchContent() {
               )}
             </div>
           </form>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="shrink-0 text-sm font-medium"
+            onClick={() => router.back()}
+          >
+            Cancel
+          </Button>
         </div>
       </div>
 
