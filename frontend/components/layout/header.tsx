@@ -418,7 +418,7 @@ export function Header() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setSearchFocused(true)}
                 />
-                {searchQuery && (
+                {(searchQuery || urlQuery) && (
                   <button
                     type="button"
                     onClick={handleClearSearch}

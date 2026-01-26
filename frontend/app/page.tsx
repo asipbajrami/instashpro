@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, LayoutGrid, ArrowUpDown, Search, Moon, Sun } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutGrid, ArrowUpDown, Search, Moon, Sun, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useGroup } from '@/components/providers/group-provider';
@@ -253,14 +253,29 @@ function HomeContent() {
                 onFiltersChange={updateFilters}
                 facets={facets}
               />
-              <Link href={searchQuery ? `/search?q=${encodeURIComponent(searchQuery)}` : '/search'} className="flex-1">
-                <div className="flex items-center gap-2 h-9 px-3 rounded-md border bg-muted/50 text-sm">
-                  <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className={searchQuery ? 'text-foreground truncate' : 'text-muted-foreground'}>
-                    {searchQuery || 'Search products...'}
-                  </span>
-                </div>
-              </Link>
+              <div className="flex-1 relative">
+                <Link href={searchQuery ? `/search?q=${encodeURIComponent(searchQuery)}` : '/search'} className="block">
+                  <div className="flex items-center gap-2 h-9 px-3 pr-9 rounded-md border bg-muted/50 text-sm">
+                    <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className={searchQuery ? 'text-foreground truncate' : 'text-muted-foreground'}>
+                      {searchQuery || 'Search products...'}
+                    </span>
+                  </div>
+                </Link>
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      router.push('/');
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted z-10"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
               <Button
                 variant="outline"
                 size="icon"

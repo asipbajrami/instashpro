@@ -35,6 +35,9 @@ function SearchContent() {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      // Empty search clears and goes home
+      router.push('/');
     }
   };
 

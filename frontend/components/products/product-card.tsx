@@ -51,27 +51,27 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Content */}
-        <div className="p-4 flex flex-col flex-1">
-          <h3 className="font-medium text-sm leading-snug line-clamp-2 min-h-[2.5rem] group-hover:text-primary transition-colors">
+        <div className="p-3 flex flex-col flex-1">
+          <h3 className="font-medium text-xs leading-tight line-clamp-2 min-h-[2rem] group-hover:text-primary transition-colors">
             {product.name}
           </h3>
 
-          <div className="mt-3 flex items-baseline gap-2">
+          <div className="mt-2 flex items-baseline gap-1.5">
             {hasDiscount ? (
               <>
-                <span className="text-lg font-bold text-red-500">
+                <span className="text-sm md:text-base font-bold text-red-500">
                   {formatPrice(discountPrice, currency)}
                 </span>
-                <span className="text-xs text-muted-foreground line-through">
+                <span className="text-[10px] md:text-xs text-muted-foreground line-through">
                   {formatPrice(price, currency)}
                 </span>
               </>
             ) : (
-              <span className="text-lg font-bold">{formatPrice(price, currency)}</span>
+              <span className="text-sm md:text-base font-bold">{formatPrice(price, currency)}</span>
             )}
           </div>
 
-          <div className="mt-auto pt-2 flex items-center justify-between gap-2">
+          <div className="mt-auto pt-1.5 flex items-center justify-between gap-2">
             {product.seller_username && (
               <p className="text-xs text-muted-foreground truncate">
                 @{product.seller_username}
