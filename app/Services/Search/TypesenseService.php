@@ -444,4 +444,103 @@ class TypesenseService
 
         return $finalResults;
     }
+
+    /**
+     * Perform hybrid search on Products collection
+     * Combines text search (title, description, brand, model) with semantic search (embedding_title)
+     *
+     * @param string $query Search query
+     * @param int $limit Max results to return
+     * @param string|null $group Filter by group (tech/car)
+     * @param array $filters Additional filters (category_id, price range, etc.)
+     * @return array Search results with product IDs and scores
+     */
+    public function searchProducts(
+        string $query,
+        int $limit = 24,
+        ?string $group = null,
+        array $filters = []
+    ): array {
+        if (empty(trim($query))) {
+            return ['hits' => [], 'found' => 0];
+        }
+
+        $startTime = microtime(true);
+
+        // Build filter string
+        $filterParts = [];
+        if ($group) {
+            $filterParts[] = "group:={$group}";
+        }
+        if (!empty($filters['primary_category_id'])) {
+            $filterParts[] = "primary_category_id:={$filters['primary_category_id']}";
+        }
+        if (!empty($filters['instagram_profile_id'])) {
+            $filterParts[] = "instagram_profile_id:={$filters['instagram_profile_id']}";
+        }
+        if (isset($filters['has_discount']) && $filters['has_discount']) {
+            $filterParts[] = "has_discount:=true";
+        }
+        if (isset($filters['min_price'])) {
+            $filterParts[] = "price:>={$filters['min_price']}";
+        }
+        if (isset($filters['max_price'])) {
+            $filterParts[] = "price:<={$filters['max_price']}";
+        }
+
+        $filterBy = !empty($filterParts) ? implode(' && ', $filterParts) : null;
+
+        // Text search with typo tolerance - no semantic search to avoid false matches
+        $searchParameters = [
+            'q' => $query,
+            'query_by' => 'name,description,type,seller_username',
+            'limit' => $limit,
+            'prefix' => 'true',
+            'num_typos' => 1,
+            'split_join_tokens' => 'fallback',
+            'typo_tokens_threshold' => 3,
+            'drop_tokens_threshold' => 1,
+            'exclude_fields' => 'embedding_name',
+        ];
+
+        if ($filterBy) {
+            $searchParameters['filter_by'] = $filterBy;
+        }
+
+        try {
+            $result = $this->client->collections['products']
+                ->documents
+                ->search($searchParameters);
+
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
+            Log::info('Search executed', [
+                'search.type' => 'products',
+                'search.mode' => 'hybrid',
+                'search.collection' => 'products',
+                'search.query' => $query,
+                'search.limit' => $limit,
+                'search.group' => $group,
+                'results.count' => count($result['hits'] ?? []),
+                'results.found' => $result['found'] ?? 0,
+                'duration.ms' => $durationMs,
+            ]);
+
+            return $result;
+        } catch (Exception $e) {
+            $durationMs = round((microtime(true) - $startTime) * 1000);
+
+            Log::error('Search failed', [
+                'search.type' => 'products',
+                'search.mode' => 'hybrid',
+                'search.collection' => 'products',
+                'search.query' => $query,
+                'error.message' => $e->getMessage(),
+                'duration.ms' => $durationMs,
+            ]);
+
+            // Return empty result on error, let controller fall back to MySQL
+            return ['hits' => [], 'found' => 0, 'error' => $e->getMessage()];
+        }
+    }
 }

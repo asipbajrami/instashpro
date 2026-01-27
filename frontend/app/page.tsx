@@ -255,7 +255,7 @@ function HomeContent() {
               />
               <div className="flex-1 relative">
                 <Link href={searchQuery ? `/search?q=${encodeURIComponent(searchQuery)}` : '/search'} className="block">
-                  <div className="flex items-center gap-2 h-9 px-3 pr-9 rounded-md border bg-muted/50 text-sm">
+                  <div className="flex items-center gap-2 h-10 px-3 pr-9 rounded-md border bg-muted/50 text-sm">
                     <Search className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className={searchQuery ? 'text-foreground truncate' : 'text-muted-foreground'}>
                       {searchQuery || 'Search products...'}

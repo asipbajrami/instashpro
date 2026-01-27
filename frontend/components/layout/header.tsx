@@ -152,10 +152,11 @@ export function Header() {
   }, [urlQuery]);
   const { selectedGroup, setSelectedGroup } = useGroup();
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories(selectedGroup || undefined);
+  // Keep suggestions query always enabled - focus state only controls dropdown visibility
   const { data: suggestionsData } = useSearchSuggestions(
     searchQuery || undefined,
     selectedGroup || undefined,
-    searchFocused
+    true
   );
   const { theme, setTheme } = useTheme();
   const desktopMenuRef = useRef<HTMLDivElement>(null);
@@ -262,7 +263,7 @@ export function Header() {
 
   const handleClearSearch = () => {
     setSearchQuery('');
-    setSearchFocused(false);
+    // Keep searchFocused true so suggestions continue to work when user retypes
     router.push('/');
   };
 
@@ -413,10 +414,14 @@ export function Header() {
                 <Input
                   type="text"
                   placeholder={`Search ${currentGroup?.label.toLowerCase() || 'products'}...`}
-                  className="pl-9 pr-8 h-9 w-full bg-muted/80 dark:bg-muted/70 border-0 focus-visible:ring-1"
+                  className="pl-9 pr-8 h-10 w-full bg-muted/80 dark:bg-muted/70 border-0 focus-visible:ring-1"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (!searchFocused) setSearchFocused(true);
+                  }}
                   onFocus={() => setSearchFocused(true)}
+                  onClick={() => setSearchFocused(true)}
                 />
                 {(searchQuery || urlQuery) && (
                   <button
@@ -432,10 +437,10 @@ export function Header() {
                 type="button"
                 variant={advancedSearchOpen ? "default" : "ghost"}
                 size="icon"
-                className="h-9 w-9 shrink-0 relative"
+                className="h-10 w-10 shrink-0 relative"
                 onClick={() => setAdvancedSearchOpen(!advancedSearchOpen)}
               >
-                <SlidersHorizontal className="h-4 w-4" />
+                <SlidersHorizontal className="h-5 w-5" />
                 {activeAdvancedFilters > 0 && (
                   <Badge className="absolute -top-1.5 -right-1.5 h-4 w-4 p-0 flex items-center justify-center text-[10px]">
                     {activeAdvancedFilters}

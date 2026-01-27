@@ -90,14 +90,14 @@ class Product extends Model
     {
         return [
             'id' => (string) $this->id,
-            'title' => $this->title ?? '',
+            'name' => $this->name ?? '',
             'description' => $this->description ?? '',
-            'brand' => $this->brand ?? '',
-            'model' => $this->model ?? '',
+            'type' => $this->type ?? '',
+            'seller_username' => $this->seller_username ?? '',
             'price' => (float) ($this->price ?? 0),
             'discount_price' => (float) ($this->discount_price ?? 0),
             'has_discount' => (bool) ($this->has_discount ?? false),
-            'condition' => $this->condition ?? '',
+            'group' => $this->group ?? '',
             'primary_category_id' => (string) ($this->primary_category_id ?? ''),
             'instagram_profile_id' => (string) ($this->instagram_profile_id ?? ''),
             'updated_at' => $this->updated_at?->timestamp ?? now()->timestamp,

@@ -47,7 +47,7 @@ export function FilterSheet({ filters, onFiltersChange, facets }: FilterSheetPro
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="lg:hidden h-9 w-9 relative">
+        <Button variant="outline" size="icon" className="lg:hidden h-10 w-10 relative">
           <SlidersHorizontal className="h-5 w-5" />
           {activeFilterCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full w-4 h-4 text-[10px] flex items-center justify-center">

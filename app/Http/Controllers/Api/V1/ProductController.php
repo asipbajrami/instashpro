@@ -227,8 +227,8 @@ class ProductController extends Controller
     }
 
     /**
-     * Search products (text search)
-     * Searches across: name, description, type, currency, seller, and attribute values
+     * Search products using Typesense hybrid search (text + semantic)
+     * Falls back to MySQL LIKE search if Typesense fails
      */
     public function search(Request $request): JsonResponse
     {
@@ -241,36 +241,102 @@ class ProductController extends Controller
             ], 400);
         }
 
-        $searchTerm = "%{$query}%";
         $group = $request->get('group');
+        $perPage = min($request->get('per_page', 24), 100);
+        $page = max($request->get('page', 1), 1);
+
+        // Build filters for Typesense
+        $typesenseFilters = [];
+        if ($request->has('min_price')) {
+            $typesenseFilters['min_price'] = $request->get('min_price');
+        }
+        if ($request->has('max_price')) {
+            $typesenseFilters['max_price'] = $request->get('max_price');
+        }
+        if ($request->boolean('has_discount')) {
+            $typesenseFilters['has_discount'] = true;
+        }
+
+        // Try Typesense hybrid search first
+        $typesenseResult = $this->typesenseService->searchProducts(
+            $query,
+            $perPage * $page + $perPage, // Fetch enough for pagination
+            $group,
+            $typesenseFilters
+        );
+
+        // Check if Typesense returned results
+        if (!empty($typesenseResult['hits']) && empty($typesenseResult['error'])) {
+            // Extract product IDs in order
+            $productIds = array_map(
+                fn($hit) => (int) $hit['document']['id'],
+                $typesenseResult['hits']
+            );
+
+            // Fetch products from MySQL with relationships
+            $products = Product::query()
+                ->with(['categories', 'attributeValues.attribute'])
+                ->whereIn('id', $productIds)
+                ->get();
+
+            // Preserve Typesense ranking order
+            $orderedProducts = $products->sortBy(function ($product) use ($productIds) {
+                return array_search($product->id, $productIds);
+            })->values();
+
+            // Manual pagination
+            $total = $orderedProducts->count();
+            $offset = ($page - 1) * $perPage;
+            $paginatedProducts = $orderedProducts->slice($offset, $perPage)->values();
+
+            $facets = $this->computeFacets($request);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'items' => ProductResource::collection($paginatedProducts),
+                    'pagination' => [
+                        'current_page' => $page,
+                        'per_page' => $perPage,
+                        'total' => $total,
+                        'total_pages' => (int) ceil($total / $perPage),
+                    ],
+                    'facets' => $facets,
+                    'search_type' => 'hybrid',
+                ],
+            ]);
+        }
+
+        // Fallback to MySQL LIKE search
+        $searchTerm = "%{$query}%";
 
         $productsQuery = Product::query()
             ->with(['categories', 'attributeValues.attribute'])
             ->where(function ($q) use ($searchTerm) {
-                // Search in product columns
                 $q->where('name', 'LIKE', $searchTerm)
                   ->orWhere('description', 'LIKE', $searchTerm)
                   ->orWhere('type', 'LIKE', $searchTerm)
                   ->orWhere('currency', 'LIKE', $searchTerm)
                   ->orWhere('seller_username', 'LIKE', $searchTerm)
-                  // Search in attribute values
                   ->orWhereHas('attributeValues', function ($attrQuery) use ($searchTerm) {
                       $attrQuery->where('value', 'LIKE', $searchTerm);
                   });
             });
 
-        // Filter by group if provided
         if ($group) {
             $productsQuery->where('group', $group);
         }
 
-        $products = $productsQuery->paginate($request->get('per_page', 24));
+        $products = $productsQuery->paginate($perPage);
 
         $facets = $this->computeFacets($request);
 
         return response()->json([
             'success' => true,
-            'data' => (new ProductCollection($products))->withFacets($facets)->toArray($request),
+            'data' => array_merge(
+                (new ProductCollection($products))->withFacets($facets)->toArray($request),
+                ['search_type' => 'text']
+            ),
         ]);
     }
 

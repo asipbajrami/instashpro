@@ -269,22 +269,22 @@ return [
                 'collection-schema' => [
                     'fields' => [
                         ['name' => 'id', 'type' => 'string'],
-                        ['name' => 'title', 'type' => 'string'],
+                        ['name' => 'name', 'type' => 'string'],
                         ['name' => 'description', 'type' => 'string'],
-                        ['name' => 'brand', 'type' => 'string'],
-                        ['name' => 'model', 'type' => 'string'],
+                        ['name' => 'type', 'type' => 'string'],
+                        ['name' => 'seller_username', 'type' => 'string'],
                         ['name' => 'price', 'type' => 'float'],
                         ['name' => 'discount_price', 'type' => 'float'],
                         ['name' => 'has_discount', 'type' => 'bool'],
-                        ['name' => 'condition', 'type' => 'string'],
+                        ['name' => 'group', 'type' => 'string'],
                         ['name' => 'primary_category_id', 'type' => 'string'],
                         ['name' => 'instagram_profile_id', 'type' => 'string'],
                         ['name' => 'updated_at', 'type' => 'int64'],
                         [
-                            'name' => 'embedding_title',
+                            'name' => 'embedding_name',
                             'type' => 'float[]',
                             'embed' => [
-                                'from' => ['title'],
+                                'from' => ['name'],
                                 'model_config' => $textEmbeddingConfig,
                             ]
                         ],
@@ -292,7 +292,7 @@ return [
                     'default_sorting_field' => 'updated_at',
                 ],
                 'search-parameters' => [
-                    'query_by' => 'title,description,brand,model'
+                    'query_by' => 'name,description,type,seller_username'
                 ],
             ],
         ],

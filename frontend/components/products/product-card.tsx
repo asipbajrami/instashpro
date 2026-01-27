@@ -61,43 +61,42 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
           {hasDiscount && (
-            <Badge className="absolute top-2.5 left-2.5 bg-red-500 hover:bg-red-500 text-xs font-semibold px-2 py-1">
+            <Badge className="absolute top-2 left-2 bg-red-500 hover:bg-red-500 text-[10px] font-semibold px-1.5 py-0.5">
               -{discountPercent}%
             </Badge>
+          )}
+          {product.seller_username && (
+            <span className="absolute bottom-2 right-2 bg-white/90 dark:bg-black/70 text-black dark:text-white text-[9px] font-medium px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+              @{product.seller_username}
+            </span>
           )}
         </div>
 
         {/* Content */}
-        <div className="p-3 flex flex-col flex-1">
-          <h3 className="font-medium text-xs leading-tight line-clamp-2 min-h-[2rem] group-hover:text-primary transition-colors">
+        <div className="p-2.5 flex flex-col flex-1">
+          <h3 className="font-medium text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
             {product.name}
           </h3>
 
-          <div className="mt-2 flex items-baseline gap-1.5">
-            {hasDiscount ? (
-              <>
-                <span className="text-sm md:text-base font-bold text-red-500">
-                  {formatPrice(discountPrice, currency)}
-                </span>
-                <span className="text-[10px] md:text-xs text-muted-foreground line-through">
-                  {formatPrice(price, currency)}
-                </span>
-              </>
-            ) : (
-              <span className="text-sm md:text-base font-bold">{formatPrice(price, currency)}</span>
-            )}
-          </div>
-
-          <div className="mt-auto pt-1.5 flex items-center justify-between gap-2">
-            {product.seller_username && (
-              <p className="text-xs text-muted-foreground truncate">
-                @{product.seller_username}
-              </p>
-            )}
+          <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
+            <div className="flex items-baseline gap-1.5">
+              {hasDiscount ? (
+                <>
+                  <span className="text-base md:text-lg font-bold text-red-500">
+                    {formatPrice(discountPrice, currency)}
+                  </span>
+                  <span className="text-xs md:text-sm text-muted-foreground line-through">
+                    {formatPrice(price, currency)}
+                  </span>
+                </>
+              ) : (
+                <span className="text-base md:text-lg font-bold">{formatPrice(price, currency)}</span>
+              )}
+            </div>
             {postDate && (
-              <p className="text-xs text-muted-foreground truncate text-right flex-shrink-0">
+              <span className="text-xs text-muted-foreground">
                 {postDate}
-              </p>
+              </span>
             )}
           </div>
         </div>

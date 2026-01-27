@@ -132,9 +132,6 @@ export default function ProductPage({ params }: ProductPageProps) {
   const discountPrice = rawPrice > 0 ? rawDiscountPrice : null;
 
   const hasDiscount = discountPrice && discountPrice > 0 && price > discountPrice;
-  const discountPercent = hasDiscount && price > 0
-    ? Math.round(((price - discountPrice) / price) * 100)
-    : 0;
   const currency = product.currency || 'ALL';
 
   return (
@@ -208,11 +205,6 @@ export default function ProductPage({ params }: ProductPageProps) {
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                           <ZoomIn className="w-10 h-10 text-white opacity-0 group-hover:opacity-70 transition-opacity" />
                         </div>
-                        {hasDiscount && index === 0 && (
-                          <Badge className="absolute top-4 right-4 bg-red-500 text-lg px-3 py-1">
-                            Sale
-                          </Badge>
-                        )}
                       </button>
                     </CarouselItem>
                   ))}
@@ -312,9 +304,6 @@ export default function ProductPage({ params }: ProductPageProps) {
                 <span className="text-xl text-muted-foreground line-through">
                   {formatPrice(price, currency)}
                 </span>
-                <Badge className="bg-red-500">
-                  {discountPercent}% OFF
-                </Badge>
               </>
             ) : (
               <span className="text-3xl font-bold">{formatPrice(price, currency)}</span>
