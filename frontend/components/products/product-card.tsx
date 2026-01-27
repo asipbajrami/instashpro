@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Product } from '@/lib/types';
 import { formatPrice } from '@/lib/currency';
+import { useTranslations } from 'next-intl';
 
 interface ProductCardProps {
   product: Product;
@@ -25,6 +26,7 @@ function formatPostDate(dateString: string | null): string {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const t = useTranslations('products');
   const primaryImage = product.images.find((img) => img.is_primary) || product.images[0];
   // Use thumbnail (mid-quality) for grid view, fall back to primary image
   const thumbnailUrl = product.thumbnail_url || primaryImage?.url;
@@ -41,6 +43,7 @@ export function ProductCard({ product }: ProductCardProps) {
     : 0;
   const currency = product.currency || 'ALL';
   const postDate = formatPostDate(product.published_at);
+  const hasPrice = price > 0;
 
   return (
     <Link href={`/products/${product.id}`} className="group block h-full">
@@ -80,7 +83,9 @@ export function ProductCard({ product }: ProductCardProps) {
 
           <div className="mt-1.5 flex items-end justify-between gap-1.5">
             <div className="flex flex-col">
-              {hasDiscount ? (
+              {!hasPrice ? (
+                <span className="text-base md:text-lg font-medium text-muted-foreground">{t('noPrice')}</span>
+              ) : hasDiscount ? (
                 <>
                   <span className="text-base md:text-lg font-bold text-red-500 leading-tight">
                     {formatPrice(discountPrice, currency)}

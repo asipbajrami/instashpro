@@ -249,8 +249,8 @@ function HomeContent() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
-          {/* Mobile header */}
-          <div className="flex flex-col gap-2 mb-4 sm:hidden">
+          {/* Mobile/Tablet header */}
+          <div className="flex flex-col gap-2 mb-4 lg:hidden">
             {/* Top row - Filter and Search Bar */}
             <div className="flex items-center gap-2">
               <FilterSheet

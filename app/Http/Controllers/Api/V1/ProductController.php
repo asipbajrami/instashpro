@@ -801,12 +801,26 @@ class ProductController extends Controller
     {
         $sort = $request->get('sort', 'newest');
 
+        // Exchange rate: 1 EUR = 96.5 ALL (normalize all prices to ALL for sorting)
+        $eurToAll = 96.5;
+
+        // Use discount_price if available, otherwise use price (effective selling price)
+        $effectivePrice = "CASE WHEN discount_price IS NOT NULL AND discount_price > 0 THEN discount_price ELSE price END";
+        // Check if effective price is 0 or null
+        $hasNoPrice = "CASE WHEN ({$effectivePrice}) IS NULL OR ({$effectivePrice}) = 0 THEN 1 ELSE 0 END";
+        // Normalize to ALL currency for comparison
+        $normalizedPrice = "CASE WHEN currency = 'EUR' THEN ({$effectivePrice}) * {$eurToAll} ELSE ({$effectivePrice}) END";
+
         switch ($sort) {
             case 'price_asc':
-                $query->orderBy('price', 'asc');
+                // Put price 0/null at the end, use effective price (discount if available), normalize EUR to ALL
+                $query->orderByRaw("{$hasNoPrice} ASC")
+                      ->orderByRaw("{$normalizedPrice} ASC");
                 break;
             case 'price_desc':
-                $query->orderBy('price', 'desc');
+                // Put price 0/null at the end, use effective price (discount if available), normalize EUR to ALL
+                $query->orderByRaw("{$hasNoPrice} ASC")
+                      ->orderByRaw("{$normalizedPrice} DESC");
                 break;
             case 'oldest':
                 // Use published_at (Instagram post date), fallback to created_at
