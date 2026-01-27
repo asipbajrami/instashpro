@@ -78,14 +78,14 @@ export function ProductCard({ product }: ProductCardProps) {
             {product.name}
           </h3>
 
-          <div className="mt-1.5 flex items-baseline justify-between gap-1.5">
-            <div className="flex items-baseline gap-1.5">
+          <div className="mt-1.5 flex items-end justify-between gap-1.5">
+            <div className="flex flex-col">
               {hasDiscount ? (
                 <>
-                  <span className="text-base md:text-lg font-bold text-red-500">
+                  <span className="text-base md:text-lg font-bold text-red-500 leading-tight">
                     {formatPrice(discountPrice, currency)}
                   </span>
-                  <span className="text-xs md:text-sm text-muted-foreground line-through">
+                  <span className="text-xs text-muted-foreground line-through leading-tight">
                     {formatPrice(price, currency)}
                   </span>
                 </>
