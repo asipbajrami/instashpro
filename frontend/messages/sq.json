@@ -1,0 +1,109 @@
+{
+  "common": {
+    "search": "Kërko",
+    "cancel": "Anulo",
+    "back": "Kthehu",
+    "clear": "Pastro",
+    "close": "Mbyll",
+    "loading": "Duke ngarkuar...",
+    "products": "Produkte",
+    "home": "Kryefaqja",
+    "all": "Të gjitha"
+  },
+  "metadata": {
+    "title": "InstashPro - Katalogu i Produkteve | Mundësuar nga datafynow.ai",
+    "description": "Shfleto katalogun tonë të produkteve - Mundësuar nga datafynow.ai"
+  },
+  "header": {
+    "poweredBy": "Mundësuar nga datafynow.ai",
+    "switchSection": "Ndrysho Seksionin",
+    "categories": "Kategoritë",
+    "current": "Aktual",
+    "noCategoriesAvailable": "Nuk ka kategori të disponueshme",
+    "advancedSearch": "Kërkim i Avancuar",
+    "productName": "Emri i Produktit",
+    "searchByName": "Kërko sipas emrit...",
+    "sellerShop": "Shitësi / Dyqani",
+    "searchBySeller": "Kërko sipas shitësit...",
+    "productFeatures": "Karakteristikat e Produktit",
+    "featuresPlaceholder": "p.sh. 256GB, Blu, Automatik...",
+    "toggleTheme": "Ndrysho temën"
+  },
+  "groups": {
+    "car": {
+      "label": "Automjete",
+      "subtitle": "Makina, Motoçikleta & Pjesë"
+    },
+    "tech": {
+      "label": "Teknologji",
+      "subtitle": "Telefona, Laptopë & Elektronikë"
+    }
+  },
+  "groupSelector": {
+    "welcomeTo": "Mirë se vini në",
+    "whatLookingFor": "Çfarë po kërkoni sot?",
+    "browse": "Shfleto {group}",
+    "changeAnytime": "Mund ta ndryshoni këtë në çdo kohë nga kreu i faqes"
+  },
+  "filters": {
+    "title": "Filtrat",
+    "expand": "Zgjero",
+    "collapse": "Mbyll",
+    "clearAllFilters": "Pastro të gjitha filtrat",
+    "categories": "Kategoritë",
+    "priceRange": "Gama e Çmimit",
+    "withPriceOnly": "Vetëm me çmim",
+    "to": "deri",
+    "productType": "Lloji i Produktit",
+    "currency": "Monedha",
+    "shopSeller": "Dyqani / Shitësi",
+    "showAll": "Shfaq të gjitha",
+    "showLess": "Shfaq më pak",
+    "searchAttribute": "Kërko {attribute}..."
+  },
+  "products": {
+    "searchProducts": "Kërko produkte...",
+    "searchPlaceholder": "Kërko {group}...",
+    "showing": "Duke shfaqur {count} nga {total} produkte",
+    "totalProducts": "{total} Produkte",
+    "results": "{count} rezultate",
+    "resultsFor": "{count} rezultate për \"{query}\"",
+    "sortBy": "Rendit sipas:",
+    "sort": "Rendit",
+    "newest": "Më të rejat",
+    "newestFirst": "Më të rejat së pari",
+    "oldest": "Më të vjetrat",
+    "oldestFirst": "Më të vjetrat së pari",
+    "priceLowHigh": "Çmimi: Ulët → Lartë",
+    "priceHighLow": "Çmimi: Lartë → Ulët",
+    "noImage": "Pa imazh",
+    "noImageAvailable": "Nuk ka imazh të disponueshëm",
+    "notFound": "Produkti nuk u gjet",
+    "backToProducts": "Kthehu te produktet",
+    "description": "Përshkrimi",
+    "specifications": "Specifikimet",
+    "viewOnInstagram": "Shiko në Instagram",
+    "posted": "Postuar më {date}",
+    "name": "Emri",
+    "seller": "Shitësi",
+    "attribute": "Atributi"
+  },
+  "search": {
+    "products": "Produkte",
+    "categories": "Kategoritë",
+    "sellers": "Shitësit",
+    "topSellers": "Shitësit Kryesorë",
+    "popular": "Popullore",
+    "searchFor": "Kërko për",
+    "startTyping": "Filloni të shkruani për të kërkuar",
+    "recentSearches": "Kërkimet e Fundit",
+    "clearAll": "Pastro të gjitha"
+  },
+  "footer": {
+    "poweredBy": "Mundësuar nga"
+  },
+  "disclaimer": {
+    "short": "Të dhënat mblidhen nga AI • Kontrolloni postimin në Instagram për saktësi",
+    "long": "Të dhënat po mblidhen nga AI. Mund të ketë gabime, ju lutem kontrolloni postimin në Instagram për informacion më të mirë."
+  }
+}

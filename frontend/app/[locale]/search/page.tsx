@@ -2,11 +2,13 @@
 
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Tag, Loader2, X } from 'lucide-react';
+import { Search, Tag, Loader2, X, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useGroup } from '@/components/providers/group-provider';
 import { useSearchSuggestions } from '@/hooks/use-products';
+import { useSearchHistory } from '@/hooks/use-search-history';
+import { useTranslations } from 'next-intl';
 
 const groupLabels: Record<string, string> = {
   car: 'vehicles',
@@ -18,8 +20,10 @@ function SearchContent() {
   const searchParams = useSearchParams();
   const { selectedGroup } = useGroup();
   const inputRef = useRef<HTMLInputElement>(null);
+  const t = useTranslations('search');
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const { history, addSearch, removeSearch, clearHistory, isLoaded } = useSearchHistory();
 
   const { data: suggestionsData, isLoading } = useSearchSuggestions(
     searchQuery || undefined,
@@ -34,6 +38,7 @@ function SearchContent() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      addSearch(searchQuery.trim());
       router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
     } else {
       // Empty search clears and goes home
@@ -42,6 +47,7 @@ function SearchContent() {
   };
 
   const handleSuggestionClick = (query: string) => {
+    addSearch(query);
     router.push(`/?q=${encodeURIComponent(query)}`);
   };
 
@@ -107,7 +113,7 @@ function SearchContent() {
               {/* Products */}
               {suggestions?.products && suggestions.products.length > 0 && (
                 <div className="mb-4 lg:mb-6">
-                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">Products</p>
+                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">{t('products')}</p>
                   {suggestions.products.map((item, index) => (
                     <button
                       key={index}
@@ -125,7 +131,7 @@ function SearchContent() {
               {/* Categories */}
               {suggestions?.categories && suggestions.categories.length > 0 && (
                 <div className="mb-4 lg:mb-6">
-                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">Categories</p>
+                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">{t('categories')}</p>
                   {suggestions.categories.map((item) => (
                     <button
                       key={item.id}
@@ -143,7 +149,7 @@ function SearchContent() {
               {/* Sellers */}
               {suggestions?.sellers && suggestions.sellers.length > 0 && (
                 <div className="mb-4 lg:mb-6">
-                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">Sellers</p>
+                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">{t('sellers')}</p>
                   {suggestions.sellers.map((item, index) => (
                     <button
                       key={index}
@@ -163,7 +169,7 @@ function SearchContent() {
               {/* No results - show search query as option */}
               {!suggestions?.products?.length && !suggestions?.categories?.length && !suggestions?.sellers?.length && (
                 <div className="mb-4 lg:mb-6">
-                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">Search for</p>
+                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">{t('searchFor')}</p>
                   <button
                     onClick={() => router.push(`/?q=${encodeURIComponent(searchQuery)}`)}
                     className="flex items-center gap-3 w-full px-4 py-2.5 lg:py-3 hover:bg-muted/50 text-left rounded-lg lg:mx-2 lg:w-[calc(100%-16px)]"
@@ -176,10 +182,49 @@ function SearchContent() {
             </div>
           ) : (
             <div className="py-2 lg:py-4">
+              {/* Recent Searches */}
+              {isLoaded && history.length > 0 && (
+                <div className="mb-4 lg:mb-6">
+                  <div className="flex items-center justify-between px-4 py-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase">{t('recentSearches')}</p>
+                    <button
+                      onClick={clearHistory}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {t('clearAll')}
+                    </button>
+                  </div>
+                  {history.map((item) => (
+                    <div
+                      key={item.timestamp}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 lg:py-3 hover:bg-muted/50 rounded-lg lg:mx-2 lg:w-[calc(100%-16px)] group"
+                    >
+                      <button
+                        onClick={() => handleSuggestionClick(item.query)}
+                        className="flex items-center gap-3 flex-1 text-left min-w-0"
+                      >
+                        <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-sm lg:text-base truncate">{item.query}</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeSearch(item.query);
+                        }}
+                        className="p-1 text-muted-foreground hover:text-foreground lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0"
+                        aria-label="Remove search"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Popular */}
               {suggestions?.popular && suggestions.popular.length > 0 && (
                 <div className="mb-4 lg:mb-6">
-                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">Popular</p>
+                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">{t('popular')}</p>
                   {suggestions.popular.slice(0, 8).map((item, index) => (
                     <button
                       key={index}
@@ -196,7 +241,7 @@ function SearchContent() {
               {/* Categories */}
               {suggestions?.categories && suggestions.categories.length > 0 && (
                 <div className="mb-4 lg:mb-6">
-                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">Categories</p>
+                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">{t('categories')}</p>
                   {suggestions.categories.map((item) => (
                     <button
                       key={item.id}
@@ -213,7 +258,7 @@ function SearchContent() {
               {/* Sellers */}
               {suggestions?.sellers && suggestions.sellers.length > 0 && (
                 <div className="lg:mb-6">
-                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">Top Sellers</p>
+                  <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase">{t('topSellers')}</p>
                   {suggestions.sellers.slice(0, 5).map((item, index) => (
                     <button
                       key={index}
@@ -231,9 +276,9 @@ function SearchContent() {
               )}
 
               {/* Empty */}
-              {!suggestions?.popular?.length && !suggestions?.categories?.length && !suggestions?.sellers?.length && (
+              {!suggestions?.popular?.length && !suggestions?.categories?.length && !suggestions?.sellers?.length && history.length === 0 && (
                 <div className="text-center py-12 px-4">
-                  <p className="text-muted-foreground lg:text-lg">Start typing to search</p>
+                  <p className="text-muted-foreground lg:text-lg">{t('startTyping')}</p>
                 </div>
               )}
             </div>

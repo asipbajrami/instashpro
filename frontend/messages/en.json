@@ -1,0 +1,109 @@
+{
+  "common": {
+    "search": "Search",
+    "cancel": "Cancel",
+    "back": "Back",
+    "clear": "Clear",
+    "close": "Close",
+    "loading": "Loading...",
+    "products": "Products",
+    "home": "Home",
+    "all": "All"
+  },
+  "metadata": {
+    "title": "InstashPro - Product Catalog | Powered by datafynow.ai",
+    "description": "Browse our product catalog - Powered by datafynow.ai"
+  },
+  "header": {
+    "poweredBy": "Powered by datafynow.ai",
+    "switchSection": "Switch Section",
+    "categories": "Categories",
+    "current": "Current",
+    "noCategoriesAvailable": "No categories available",
+    "advancedSearch": "Advanced Search",
+    "productName": "Product Name",
+    "searchByName": "Search by name...",
+    "sellerShop": "Seller / Shop",
+    "searchBySeller": "Search by seller...",
+    "productFeatures": "Product Features",
+    "featuresPlaceholder": "e.g. 256GB, Blue, Automatic...",
+    "toggleTheme": "Toggle theme"
+  },
+  "groups": {
+    "car": {
+      "label": "Vehicles",
+      "subtitle": "Cars, Motorcycles & Parts"
+    },
+    "tech": {
+      "label": "Technology",
+      "subtitle": "Phones, Laptops & Electronics"
+    }
+  },
+  "groupSelector": {
+    "welcomeTo": "Welcome to",
+    "whatLookingFor": "What are you looking for today?",
+    "browse": "Browse {group}",
+    "changeAnytime": "You can change this anytime from the header"
+  },
+  "filters": {
+    "title": "Filters",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "clearAllFilters": "Clear all filters",
+    "categories": "Categories",
+    "priceRange": "Price Range",
+    "withPriceOnly": "With price only",
+    "to": "to",
+    "productType": "Product Type",
+    "currency": "Currency",
+    "shopSeller": "Shop / Seller",
+    "showAll": "Show all",
+    "showLess": "Show less",
+    "searchAttribute": "Search {attribute}..."
+  },
+  "products": {
+    "searchProducts": "Search products...",
+    "searchPlaceholder": "Search {group}...",
+    "showing": "Showing {count} of {total} products",
+    "totalProducts": "{total} Products",
+    "results": "{count} results",
+    "resultsFor": "{count} results for \"{query}\"",
+    "sortBy": "Sort by:",
+    "sort": "Sort",
+    "newest": "Newest",
+    "newestFirst": "Newest First",
+    "oldest": "Oldest",
+    "oldestFirst": "Oldest First",
+    "priceLowHigh": "Price: Low → High",
+    "priceHighLow": "Price: High → Low",
+    "noImage": "No image",
+    "noImageAvailable": "No image available",
+    "notFound": "Product not found",
+    "backToProducts": "Back to products",
+    "description": "Description",
+    "specifications": "Specifications",
+    "viewOnInstagram": "View on Instagram",
+    "posted": "Posted {date}",
+    "name": "Name",
+    "seller": "Seller",
+    "attribute": "Attribute"
+  },
+  "search": {
+    "products": "Products",
+    "categories": "Categories",
+    "sellers": "Sellers",
+    "topSellers": "Top Sellers",
+    "popular": "Popular",
+    "searchFor": "Search for",
+    "startTyping": "Start typing to search",
+    "recentSearches": "Recent Searches",
+    "clearAll": "Clear all"
+  },
+  "footer": {
+    "poweredBy": "Powered by"
+  },
+  "disclaimer": {
+    "short": "Data collected by AI • Check Instagram post for accuracy",
+    "long": "Data are being collected by AI. Mistakes may be made, please check the Instagram post for better info."
+  }
+}

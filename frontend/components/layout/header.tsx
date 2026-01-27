@@ -1,33 +1,32 @@
 'use client';
 
-import Link from 'next/link';
+import { Link, useRouter, usePathname } from '@/i18n/navigation';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Search, ShoppingBag, Car, Smartphone, ChevronDown, ChevronRight, Moon, Sun, SlidersHorizontal, X, Tag } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useGroup, ProductGroup } from '@/components/providers/group-provider';
 import { useCategories } from '@/hooks/use-categories';
 import { useSearchSuggestions } from '@/hooks/use-products';
 import { Category } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-
-const groupConfig: Record<NonNullable<ProductGroup>, { label: string; icon: React.ReactNode; color: string; bgColor: string }> = {
-  car: { label: 'Vehicles', icon: <Car className="h-4 w-4" />, color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-950/30' },
-  tech: { label: 'Technology', icon: <Smartphone className="h-4 w-4" />, color: 'text-purple-600', bgColor: 'bg-purple-50 dark:bg-purple-950/30' },
-};
+import { LanguageSwitcher } from '@/components/language-switcher';
 
 // Mega menu for categories with nested levels
 function CategoryMegaMenu({
   category,
   onSelect,
   onCategoryClick,
+  allText,
 }: {
   category: Category;
   onSelect: () => void;
   onCategoryClick: (categoryId: number) => void;
+  allText: string;
 }) {
   const [selectedChild, setSelectedChild] = useState<Category | null>(null);
   const [selectedGrandchild, setSelectedGrandchild] = useState<Category | null>(null);
@@ -46,7 +45,7 @@ function CategoryMegaMenu({
             onClick={() => handleCategorySelect(category)}
             className="block w-full text-left px-3 py-2 text-sm font-semibold text-primary hover:bg-accent rounded-md mb-1"
           >
-            All {category.name}
+            {allText} {category.name}
           </button>
           {category.children?.map((child) => (
             <button
@@ -78,7 +77,7 @@ function CategoryMegaMenu({
               onClick={() => handleCategorySelect(selectedChild)}
               className="block w-full text-left px-3 py-2 text-sm font-semibold text-primary hover:bg-accent rounded-md mb-1"
             >
-              All {selectedChild.name}
+              {allText} {selectedChild.name}
             </button>
             {selectedChild.children.map((grandchild) => (
               <button
@@ -111,7 +110,7 @@ function CategoryMegaMenu({
               onClick={() => handleCategorySelect(selectedGrandchild)}
               className="block w-full text-left px-3 py-2 text-sm font-semibold text-primary hover:bg-accent rounded-md mb-1"
             >
-              All {selectedGrandchild.name}
+              {allText} {selectedGrandchild.name}
             </button>
             {selectedGrandchild.children.map((greatGrandchild) => (
               <button
@@ -131,9 +130,21 @@ function CategoryMegaMenu({
 }
 
 export function Header() {
+  const t = useTranslations();
+  const tHeader = useTranslations('header');
+  const tGroups = useTranslations('groups');
+  const tSearch = useTranslations('search');
+  const tCommon = useTranslations('common');
+
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get('q') || '';
+
+  const groupConfig: Record<NonNullable<ProductGroup>, { label: string; icon: React.ReactNode; color: string; bgColor: string }> = {
+    car: { label: tGroups('car.label'), icon: <Car className="h-4 w-4" />, color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-950/30' },
+    tech: { label: tGroups('tech.label'), icon: <Smartphone className="h-4 w-4" />, color: 'text-purple-600', bgColor: 'bg-purple-50 dark:bg-purple-950/30' },
+  };
 
   const [searchQuery, setSearchQuery] = useState(urlQuery);
   const [advancedSearchOpen, setAdvancedSearchOpen] = useState(false);
@@ -285,7 +296,7 @@ export function Header() {
           <ShoppingBag className="h-6 w-6" />
           <div className="hidden sm:block">
             <span className="text-lg font-bold leading-none">InstashPro</span>
-            <span className="block text-[10px] text-muted-foreground leading-tight">Powered by datafynow.ai</span>
+            <span className="block text-[10px] text-muted-foreground leading-tight">{tHeader('poweredBy')}</span>
           </div>
         </Link>
 
@@ -311,7 +322,7 @@ export function Header() {
                 {/* Group Switcher */}
                 <div className="p-2 border-b">
                   <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Switch Section
+                    {tHeader('switchSection')}
                   </p>
                   {(Object.entries(groupConfig) as [NonNullable<ProductGroup>, typeof groupConfig.car][]).map(
                     ([key, config]) => (
@@ -328,7 +339,7 @@ export function Header() {
                         <span className={config.color}>{config.icon}</span>
                         <span>{config.label}</span>
                         {selectedGroup === key && (
-                          <span className="ml-auto text-xs text-muted-foreground">Current</span>
+                          <span className="ml-auto text-xs text-muted-foreground">{tHeader('current')}</span>
                         )}
                       </button>
                     )
@@ -338,7 +349,7 @@ export function Header() {
                 {/* Categories */}
                 <div className="p-2">
                   <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Categories
+                    {tHeader('categories')}
                   </p>
                   {categoriesLoading ? (
                     <div className="px-3 py-4">
@@ -393,11 +404,12 @@ export function Header() {
                           category={expandedCategory}
                           onSelect={closeDesktopMenu}
                           onCategoryClick={handleCategoryClick}
+                          allText={tCommon('all')}
                         />
                       )}
                     </div>
                   ) : (
-                    <p className="px-3 py-4 text-sm text-muted-foreground">No categories available</p>
+                    <p className="px-3 py-4 text-sm text-muted-foreground">{tHeader('noCategoriesAvailable')}</p>
                   )}
                 </div>
               </div>
@@ -413,7 +425,7 @@ export function Header() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input
                   type="text"
-                  placeholder={`Search ${currentGroup?.label.toLowerCase() || 'products'}...`}
+                  placeholder={t('products.searchPlaceholder', { group: currentGroup?.label.toLowerCase() || tCommon('products').toLowerCase() })}
                   className="pl-9 pr-8 h-10 w-full bg-muted/80 dark:bg-muted/70 border-0 focus-visible:ring-1"
                   value={searchQuery}
                   onChange={(e) => {
@@ -456,7 +468,7 @@ export function Header() {
               {/* Products */}
               {searchQuery && suggestions?.products && suggestions.products.length > 0 && (
                 <div className="py-1">
-                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">Products</p>
+                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">{tSearch('products')}</p>
                   {suggestions.products.slice(0, 5).map((item, index) => (
                     <button
                       key={index}
@@ -474,7 +486,7 @@ export function Header() {
               {/* Popular (when no query) */}
               {!searchQuery && suggestions?.popular && suggestions.popular.length > 0 && (
                 <div className="py-1">
-                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">Popular</p>
+                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">{tSearch('popular')}</p>
                   {suggestions.popular.slice(0, 5).map((item, index) => (
                     <button
                       key={index}
@@ -491,7 +503,7 @@ export function Header() {
               {/* Categories */}
               {suggestions?.categories && suggestions.categories.length > 0 && (
                 <div className="py-1 border-t">
-                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">Categories</p>
+                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">{tSearch('categories')}</p>
                   {suggestions.categories.slice(0, 4).map((item) => (
                     <button
                       key={item.id}
@@ -509,7 +521,7 @@ export function Header() {
               {/* Sellers */}
               {suggestions?.sellers && suggestions.sellers.length > 0 && (
                 <div className="py-1 border-t">
-                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">Sellers</p>
+                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">{tSearch('sellers')}</p>
                   {suggestions.sellers.slice(0, 4).map((item, index) => (
                     <button
                       key={index}
@@ -529,7 +541,7 @@ export function Header() {
               {/* Search for query - when no matching suggestions */}
               {searchQuery && !suggestions?.products?.length && !suggestions?.categories?.length && !suggestions?.sellers?.length && (
                 <div className="py-1">
-                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">Search for</p>
+                  <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase">{tSearch('searchFor')}</p>
                   <button
                     onClick={() => handleSuggestionClick(searchQuery)}
                     className="flex items-center gap-3 w-full px-3 py-2 hover:bg-muted/50 text-left"
@@ -543,6 +555,9 @@ export function Header() {
           )}
         </div>
 
+        {/* Language Switcher */}
+        <LanguageSwitcher />
+
         {/* Theme Toggle - Desktop only */}
         <Button
           variant="ghost"
@@ -552,7 +567,7 @@ export function Header() {
         >
           <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
           <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
+          <span className="sr-only">{tHeader('toggleTheme')}</span>
         </Button>
         </div>
       </div>
@@ -563,7 +578,7 @@ export function Header() {
           <div className="w-full flex">
             <div className="flex-1 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-muted-foreground">Advanced Search</span>
+              <span className="text-sm font-medium text-muted-foreground">{tHeader('advancedSearch')}</span>
               <Button
                 type="button"
                 variant="outline"
@@ -572,32 +587,32 @@ export function Header() {
                 onClick={closeAdvancedSearch}
               >
                 <X className="h-3 w-3 mr-1" />
-                Close
+                {tCommon('close')}
               </Button>
             </div>
             <form onSubmit={handleSearch} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Product Name</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{tHeader('productName')}</label>
                 <Input
-                  placeholder="Search by name..."
+                  placeholder={tHeader('searchByName')}
                   className="h-8 text-sm"
                   value={advancedFields.name}
                   onChange={(e) => setAdvancedFields(prev => ({ ...prev, name: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Seller / Shop</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{tHeader('sellerShop')}</label>
                 <Input
-                  placeholder="Search by seller..."
+                  placeholder={tHeader('searchBySeller')}
                   className="h-8 text-sm"
                   value={advancedFields.seller}
                   onChange={(e) => setAdvancedFields(prev => ({ ...prev, seller: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Product Features</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{tHeader('productFeatures')}</label>
                 <Input
-                  placeholder="e.g. 256GB, Blue, Automatic..."
+                  placeholder={tHeader('featuresPlaceholder')}
                   className="h-8 text-sm"
                   value={advancedFields.attrValue}
                   onChange={(e) => setAdvancedFields(prev => ({ ...prev, attrValue: e.target.value }))}
@@ -611,11 +626,11 @@ export function Header() {
                   className="h-8"
                   onClick={clearAdvancedSearch}
                 >
-                  Clear
+                  {tCommon('clear')}
                 </Button>
                 <Button type="submit" size="sm" className="h-8">
                   <Search className="h-3.5 w-3.5 mr-1.5" />
-                  Search
+                  {tCommon('search')}
                 </Button>
               </div>
             </form>

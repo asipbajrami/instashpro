@@ -27,9 +27,11 @@ class CategoryController extends Controller
     public function index(Request $request): JsonResponse
     {
         $group = $request->get('group');
+        $locale = $request->get('locale', 'en');
 
-        // Load all non-temp categories with product counts in a SINGLE query
-        $allCategories = Category::withCount('products')
+        // Load all non-temp categories with product counts and translations in a SINGLE query
+        $allCategories = Category::with('translations')
+            ->withCount('products')
             ->where('is_temp', false)
             ->orderBy('score', 'desc')
             ->get()
@@ -44,7 +46,7 @@ class CategoryController extends Controller
 
         // Build tree structure in PHP (much faster than recursive DB queries)
         $categories = collect($rootCategoryIds)
-            ->map(fn($id) => $this->buildCategoryTree($allCategories, $id))
+            ->map(fn($id) => $this->buildCategoryTree($allCategories, $id, $locale))
             ->filter()
             ->values();
 
@@ -57,7 +59,7 @@ class CategoryController extends Controller
     /**
      * Build category tree recursively from pre-loaded categories
      */
-    private function buildCategoryTree($allCategories, $categoryId): ?array
+    private function buildCategoryTree($allCategories, $categoryId, string $locale = 'en'): ?array
     {
         $category = $allCategories->get($categoryId);
         if (!$category) {
@@ -66,16 +68,16 @@ class CategoryController extends Controller
 
         $children = $allCategories
             ->where('parent_id', $categoryId)
-            ->map(fn($child) => $this->buildCategoryTree($allCategories, $child->id))
+            ->map(fn($child) => $this->buildCategoryTree($allCategories, $child->id, $locale))
             ->filter()
             ->values()
             ->toArray();
 
         return [
             'id' => $category->id,
-            'name' => $category->name,
+            'name' => $category->getTranslatedName($locale),
             'slug' => $category->slug,
-            'description' => $category->description,
+            'description' => $category->getTranslatedDescription($locale),
             'product_count' => $category->products_count,
             'children' => $children,
         ];
@@ -86,12 +88,17 @@ class CategoryController extends Controller
      */
     public function show(Request $request, string $slug): JsonResponse
     {
-        $category = Category::with(['children' => function ($q) {
-            $q->withCount('products');
+        $locale = $request->get('locale', 'en');
+
+        $category = Category::with(['translations', 'children' => function ($q) {
+            $q->with('translations')->withCount('products');
         }])
         ->withCount('products')
         ->where('slug', $slug)
         ->firstOrFail();
+
+        // Store locale in request for CategoryResource to use
+        $request->merge(['_locale' => $locale]);
 
         $products = Product::with(['categories', 'attributeValues.attribute'])
             ->whereHas('categories', function ($q) use ($category) {

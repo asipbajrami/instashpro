@@ -1,19 +1,22 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useLocale } from 'next-intl';
 import { getCategories, getCategoryWithProducts } from '@/lib/api';
 
 export function useCategories(group?: 'car' | 'tech') {
+  const locale = useLocale();
   return useQuery({
-    queryKey: ['categories', group],
-    queryFn: () => getCategories(group),
+    queryKey: ['categories', group, locale],
+    queryFn: () => getCategories(group, locale),
   });
 }
 
 export function useCategoryWithProducts(slug: string, page = 1, perPage = 24) {
+  const locale = useLocale();
   return useQuery({
-    queryKey: ['category', slug, page, perPage],
-    queryFn: () => getCategoryWithProducts(slug, page, perPage),
+    queryKey: ['category', slug, page, perPage, locale],
+    queryFn: () => getCategoryWithProducts(slug, page, perPage, locale),
     enabled: !!slug,
   });
 }

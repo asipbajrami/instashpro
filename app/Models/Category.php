@@ -62,6 +62,29 @@ class Category extends Model
             ->withTimestamps();
     }
 
+    public function translations(): HasMany
+    {
+        return $this->hasMany(CategoryTranslation::class);
+    }
+
+    /**
+     * Get translated name for a specific locale
+     */
+    public function getTranslatedName(string $locale = 'en'): string
+    {
+        $translation = $this->translations->firstWhere('locale', $locale);
+        return $translation?->name ?? $this->name;
+    }
+
+    /**
+     * Get translated description for a specific locale
+     */
+    public function getTranslatedDescription(string $locale = 'en'): ?string
+    {
+        $translation = $this->translations->firstWhere('locale', $locale);
+        return $translation?->description ?? $this->description;
+    }
+
     public function searchableAs(): string
     {
         return 'category';

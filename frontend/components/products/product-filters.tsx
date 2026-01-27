@@ -17,6 +17,7 @@ import { Category, Facets } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useGroup } from '@/components/providers/group-provider';
 import { formatPrice } from '@/lib/currency';
+import { useTranslations } from 'next-intl';
 
 export interface FilterState {
   category?: string;
@@ -44,6 +45,8 @@ export function ProductFilters({
   facets,
   className,
 }: ProductFiltersProps) {
+  const t = useTranslations('filters');
+  const tCommon = useTranslations('common');
   const { selectedGroup } = useGroup();
   const { data: categoriesData, isLoading: categoriesLoading } = useCategories(selectedGroup || undefined);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
@@ -75,23 +78,22 @@ export function ProductFilters({
   // Get all available section IDs
   const getAllSectionIds = (): string[] => {
     const sections: string[] = [];
-    
+
     // Always available sections
     sections.push('categories');
-    
-    // Conditional sections
-    if (facets?.price_range) sections.push('price');
+
+    // Conditional sections (price is always visible, not collapsible)
     if (facets?.types && facets.types.length > 0) sections.push('types');
     if (facets?.currencies && facets.currencies.length > 1) sections.push('currency');
     if (facets?.profiles && facets.profiles.length > 0) sections.push('profiles');
-    
+
     // Attribute sections
     if (facets?.attributes) {
       facets.attributes.forEach(attr => {
         sections.push(`attr-${attr.id}`);
       });
     }
-    
+
     return sections;
   };
 
@@ -347,12 +349,12 @@ export function ProductFilters({
         <div key={category.id}>
           <div
             className={cn(
-              'flex items-center gap-1.5 py-1.5 px-2 rounded-md cursor-pointer transition-all group min-w-0',
+              'flex items-center gap-1 py-1.5 px-2 rounded-md cursor-pointer transition-all group min-w-0',
               isSelected
                 ? 'bg-primary text-primary-foreground'
                 : 'hover:bg-muted',
             )}
-            style={{ marginLeft: `${level * 12}px` }}
+            style={{ marginLeft: `${level * 8}px` }}
             onClick={() => handleCategoryChange(category.slug, category.id)}
           >
             {hasChildren && (
@@ -362,35 +364,27 @@ export function ProductFilters({
                   toggleCategory(category.id);
                 }}
                 className={cn(
-                  'p-0.5 rounded transition-colors',
+                  'p-1.5 lg:p-0.5 rounded transition-colors -ml-1 lg:ml-0',
                   isSelected ? 'hover:bg-primary-foreground/20' : 'hover:bg-muted-foreground/20'
                 )}
               >
                 {isExpanded ? (
-                  <ChevronDown className={cn('h-3.5 w-3.5', isSelected ? 'text-primary-foreground' : 'text-muted-foreground')} />
+                  <ChevronDown className={cn('h-5 w-5 lg:h-3.5 lg:w-3.5', isSelected ? 'text-primary-foreground' : 'text-muted-foreground')} />
                 ) : (
-                  <ChevronRight className={cn('h-3.5 w-3.5', isSelected ? 'text-primary-foreground' : 'text-muted-foreground')} />
+                  <ChevronRight className={cn('h-5 w-5 lg:h-3.5 lg:w-3.5', isSelected ? 'text-primary-foreground' : 'text-muted-foreground')} />
                 )}
               </button>
             )}
             <span className={cn(
               'text-sm flex-1 truncate min-w-0',
               isSelected && 'font-medium',
-              !hasChildren && 'ml-5'
+              !hasChildren && 'ml-6 lg:ml-4'
             )}>
               {category.name}
             </span>
-            {category.product_count > 0 && (
-              <span className={cn(
-                'text-xs tabular-nums shrink-0',
-                isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'
-              )}>
-                {category.product_count}
-              </span>
-            )}
           </div>
           {hasChildren && isExpanded && (
-            <div className="mt-0.5 border-l border-border/50 ml-3 animate-slide-in-right">
+            <div className="mt-0.5 border-l border-border/50 ml-2 animate-slide-in-right">
               {renderCategoryTree(category.children!, level + 1)}
             </div>
           )}
@@ -409,24 +403,24 @@ export function ProductFilters({
       {allSections.length > 0 && (
         <div className="flex items-center justify-between -mx-3 px-4 sm:px-6 lg:px-8">
           <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Filters
+            {t('title')}
           </h3>
           <Button
             variant="ghost"
             size="sm"
             onClick={toggleAll}
             className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-            title={hasExpanded ? "Collapse All" : "Expand All"}
+            title={hasExpanded ? t('collapse') : t('expand')}
           >
             {hasExpanded ? (
               <>
                 <ChevronsDownUp className="h-3 w-3 mr-1.5" />
-                Collapse
+                {t('collapse')}
               </>
             ) : (
               <>
                 <ChevronsUpDown className="h-3 w-3 mr-1.5" />
-                Expand
+                {t('expand')}
               </>
             )}
           </Button>
@@ -443,7 +437,7 @@ export function ProductFilters({
             className="w-full h-9 text-sm border-dashed border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-foreground/50 hover:bg-muted/50"
           >
             <X className="h-4 w-4 mr-2" />
-            Clear all filters
+            {t('clearAllFilters')}
             <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
               {activeFilterCount}
             </Badge>
@@ -459,7 +453,7 @@ export function ProductFilters({
         <CollapsibleTrigger asChild>
           <button className="flex items-center justify-between w-full text-left py-1.5 -mx-3 px-4 sm:px-6 lg:px-8 rounded-lg hover:bg-muted/50 transition-colors">
             <h3 className="text-sm font-medium text-foreground">
-              Categories
+              {t('categories')}
             </h3>
             <ChevronDown className={cn(
               "h-4 w-4 text-muted-foreground transition-transform duration-300 ease-out",
@@ -482,76 +476,63 @@ export function ProductFilters({
         </CollapsibleContent>
       </Collapsible>
 
-      {/* Price Range */}
+      {/* Price Range - Always visible */}
       {facets?.price_range && (
-        <Collapsible
-          open={expandedSections.has('price')}
-          onOpenChange={() => toggleSection('price')}
-        >
-          <CollapsibleTrigger asChild>
-            <button className="flex items-center justify-between w-full text-left py-1.5 -mx-3 px-4 sm:px-6 lg:px-8 rounded-lg hover:bg-muted/50 transition-colors">
-              <h3 className="text-sm font-medium text-foreground">
-                Price Range
-              </h3>
-              <ChevronDown className={cn(
-                "h-4 w-4 text-muted-foreground transition-transform duration-300 ease-out",
-                expandedSections.has('price') && "rotate-180"
-              )} />
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="bg-muted/30 rounded-xl p-4 space-y-4 mt-2 -mx-3 px-4 sm:px-6 lg:px-8">
-              {/* Has Price Toggle */}
-              <label
-                className={cn(
-                  "flex items-center justify-between gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all border",
-                  filters.has_price
-                    ? "bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-600"
-                    : "bg-background border-transparent hover:bg-muted/50"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <DollarSign className={cn("h-4 w-4", filters.has_price ? "text-emerald-600" : "text-muted-foreground")} />
-                  <span className="text-sm">With price only</span>
-                </div>
-                <Switch
-                  checked={filters.has_price ?? false}
-                  onCheckedChange={handleHasPriceChange}
-                />
-              </label>
-              <Slider
-                value={priceRange}
-                min={facets.price_range.min}
-                max={facets.price_range.max}
-                step={1}
-                onValueChange={handlePriceChange}
-                onValueCommit={handlePriceCommit}
-                className="mb-4"
-              />
-              <div className="flex items-center justify-between gap-2">
-                <Input
-                  type="number"
-                  value={priceRange[0]}
-                  onChange={handleMinPriceInput}
-                  min={facets?.price_range?.min || 0}
-                  max={priceRange[1]}
-                  step="1"
-                  className="bg-background border rounded-lg px-3 py-2 text-xs font-medium flex-1 text-center h-auto [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                />
-                <span className="text-muted-foreground text-xs">to</span>
-                <Input
-                  type="number"
-                  value={priceRange[1]}
-                  onChange={handleMaxPriceInput}
-                  min={priceRange[0]}
-                  max={facets?.price_range?.max || 1000}
-                  step="1"
-                  className="bg-background border rounded-lg px-3 py-2 text-xs font-medium flex-1 text-center h-auto [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                />
+        <div>
+          <h3 className="text-sm font-medium text-foreground py-1.5 -mx-3 px-4 sm:px-6 lg:px-8">
+            {t('priceRange')}
+          </h3>
+          <div className="bg-muted/30 rounded-xl p-4 space-y-4 mt-2 -mx-3 mx-1 sm:mx-2 lg:mx-4">
+            {/* Has Price Toggle */}
+            <label
+              className={cn(
+                "flex items-center justify-between gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all border",
+                filters.has_price
+                  ? "bg-emerald-50 border-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-600"
+                  : "bg-background border-transparent hover:bg-muted/50"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <DollarSign className={cn("h-4 w-4", filters.has_price ? "text-emerald-600" : "text-muted-foreground")} />
+                <span className="text-sm">{t('withPriceOnly')}</span>
               </div>
+              <Switch
+                checked={filters.has_price ?? false}
+                onCheckedChange={handleHasPriceChange}
+              />
+            </label>
+            <Slider
+              value={priceRange}
+              min={facets.price_range.min}
+              max={facets.price_range.max}
+              step={1}
+              onValueChange={handlePriceChange}
+              onValueCommit={handlePriceCommit}
+              className="mb-4"
+            />
+            <div className="flex items-center justify-between gap-2">
+              <Input
+                type="number"
+                value={priceRange[0]}
+                onChange={handleMinPriceInput}
+                min={facets?.price_range?.min || 0}
+                max={priceRange[1]}
+                step="1"
+                className="bg-background border rounded-lg px-3 py-2 text-xs font-medium flex-1 text-center h-auto [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <span className="text-muted-foreground text-xs">{t('to')}</span>
+              <Input
+                type="number"
+                value={priceRange[1]}
+                onChange={handleMaxPriceInput}
+                min={priceRange[0]}
+                max={facets?.price_range?.max || 1000}
+                step="1"
+                className="bg-background border rounded-lg px-3 py-2 text-xs font-medium flex-1 text-center h-auto [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
             </div>
-          </CollapsibleContent>
-        </Collapsible>
+          </div>
+        </div>
       )}
 
       {/* Product Types */}
@@ -563,7 +544,7 @@ export function ProductFilters({
           <CollapsibleTrigger asChild>
             <button className="flex items-center justify-between w-full text-left py-1.5 -mx-3 px-4 sm:px-6 lg:px-8 rounded-lg hover:bg-muted/50 transition-colors">
               <h3 className="text-sm font-medium text-foreground">
-                Product Type
+                {t('productType')}
               </h3>
               <ChevronDown className={cn(
                 "h-4 w-4 text-muted-foreground transition-transform duration-300 ease-out",
@@ -609,7 +590,7 @@ export function ProductFilters({
           <CollapsibleTrigger asChild>
             <button className="flex items-center justify-between w-full text-left py-1.5 -mx-3 px-4 sm:px-6 lg:px-8 rounded-lg hover:bg-muted/50 transition-colors">
               <h3 className="text-sm font-medium text-foreground">
-                Currency
+                {t('currency')}
               </h3>
               <ChevronDown className={cn(
                 "h-4 w-4 text-muted-foreground transition-transform duration-300 ease-out",
@@ -655,7 +636,7 @@ export function ProductFilters({
           <CollapsibleTrigger asChild>
             <button className="flex items-center justify-between w-full text-left py-1.5 -mx-3 px-4 sm:px-6 lg:px-8 rounded-lg hover:bg-muted/50 transition-colors">
               <h3 className="text-sm font-medium text-foreground">
-                Shop / Seller
+                {t('shopSeller')}
               </h3>
               <ChevronDown className={cn(
                 "h-4 w-4 text-muted-foreground transition-transform duration-300 ease-out",
@@ -708,6 +689,11 @@ export function ProductFilters({
         </Collapsible>
       )}
 
+      {/* Divider before attributes */}
+      {facets?.attributes && facets.attributes.length > 0 && (
+        <div className="border-t border-border/50 my-2 -mx-3 mx-1" />
+      )}
+
       {/* Attributes - filtered by group on the API side */}
       {facets?.attributes && facets.attributes.map((attribute) => {
         const sectionKey = `attr-${attribute.id}`;
@@ -756,7 +742,7 @@ export function ProductFilters({
                       <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                          placeholder={`Search ${attribute.name.toLowerCase()}...`}
+                          placeholder={t('searchAttribute', { attribute: attribute.name.toLowerCase() })}
                           value={expandedData.search}
                           onChange={(e) => handleAttributeSearch(attribute.id, e.target.value)}
                           className="pl-8 h-9 text-sm rounded-lg"
@@ -818,17 +804,17 @@ export function ProductFilters({
                   {expandedData?.loading ? (
                     <>
                       <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
-                      Loading...
+                      {tCommon('loading')}
                     </>
                   ) : isValuesExpanded ? (
                     <>
                       <ChevronUp className="h-3 w-3 mr-1.5" />
-                      Show less
+                      {t('showLess')}
                     </>
                   ) : (
                     <>
                       <ChevronDown className="h-3 w-3 mr-1.5" />
-                      Show all
+                      {t('showAll')}
                     </>
                   )}
                 </Button>

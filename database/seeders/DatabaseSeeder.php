@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             ProductAttributeSeeder::class,
             StructureSeeder::class,
             CategoriesSeeder::class,
+            CategoryTranslationsSeeder::class,
             StructureOutputGroupSeeder::class,
         ]);
     }

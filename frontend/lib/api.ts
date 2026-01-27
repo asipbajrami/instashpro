@@ -166,9 +166,10 @@ export async function getAttributeValues(attributeId: number, search?: string, c
 }
 
 // Categories API
-export async function getCategories(group?: 'car' | 'tech'): Promise<CategoriesResponse> {
+export async function getCategories(group?: 'car' | 'tech', locale?: string): Promise<CategoriesResponse> {
   const params: Record<string, string> = {};
   if (group) params.group = group;
+  if (locale) params.locale = locale;
 
   const { data } = await api.get<CategoriesResponse>('/categories', { params });
   return data;
@@ -177,10 +178,11 @@ export async function getCategories(group?: 'car' | 'tech'): Promise<CategoriesR
 export async function getCategoryWithProducts(
   slug: string,
   page = 1,
-  perPage = 24
+  perPage = 24,
+  locale?: string
 ): Promise<CategoryWithProductsResponse> {
   const { data } = await api.get<CategoryWithProductsResponse>(`/categories/${slug}`, {
-    params: { page, per_page: perPage },
+    params: { page, per_page: perPage, locale },
   });
   return data;
 }

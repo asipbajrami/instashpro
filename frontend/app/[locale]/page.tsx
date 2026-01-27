@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback, useEffect, Suspense, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useRouter, Link } from '@/i18n/navigation';
 import { useProducts, useSearchProducts, useAdvancedSearch } from '@/hooks/use-products';
 import { ProductGrid } from '@/components/products/product-grid';
 import { ProductFilters, FilterState } from '@/components/products/product-filters';
@@ -19,9 +20,10 @@ import {
 } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, LayoutGrid, ArrowUpDown, Search, Moon, Sun, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import Link from 'next/link';
 import { useGroup } from '@/components/providers/group-provider';
 import { AdvancedSearchParams } from '@/lib/api';
+import { useTranslations } from 'next-intl';
+import { LanguageSwitcher } from '@/components/language-switcher';
 
 // ============================================================================
 // URL is the single source of truth for filters.
@@ -90,7 +92,7 @@ function HomePageSkeleton() {
   return (
     <div className="flex min-h-[calc(100vh-3.5rem)]">
       {/* Sidebar skeleton - desktop only */}
-      <aside className="hidden lg:flex w-64 flex-col border-r bg-background flex-shrink-0">
+      <aside className="hidden lg:flex w-72 flex-col border-r bg-background flex-shrink-0">
         <div className="border-b px-4 py-3">
           <Skeleton className="h-5 w-20" />
         </div>
@@ -138,6 +140,8 @@ function HomeContent() {
   const { selectedGroup } = useGroup();
   const { theme, setTheme } = useTheme();
   const previousGroup = useRef(selectedGroup);
+  const t = useTranslations('products');
+  const tDisclaimer = useTranslations('disclaimer');
 
   // Derive filters directly from URL - single source of truth
   const filters = parseFiltersFromParams(searchParams);
@@ -228,7 +232,7 @@ function HomeContent() {
   return (
     <div className="flex min-h-[calc(100vh-3.5rem)]">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 flex-col border-r bg-background flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-hidden">
+      <aside className="hidden lg:flex w-72 flex-col border-r bg-background flex-shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-hidden">
         <div className="flex-1 overflow-y-auto px-3 pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
           <div className="py-3">
             <ProductFilters
@@ -258,7 +262,7 @@ function HomeContent() {
                   <div className="flex items-center gap-2 h-10 px-3 pr-9 rounded-md border bg-muted/50 text-sm">
                     <Search className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className={searchQuery ? 'text-foreground truncate' : 'text-muted-foreground'}>
-                      {searchQuery || 'Search products...'}
+                      {searchQuery || t('searchProducts')}
                     </span>
                   </div>
                 </Link>
@@ -285,11 +289,12 @@ function HomeContent() {
                 <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                 <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               </Button>
+              <LanguageSwitcher compact />
             </div>
             {/* Warning */}
             <div className="bg-muted/30 border rounded-lg py-1 px-2">
               <p className="text-[8px] text-muted-foreground font-medium uppercase tracking-tight text-center">
-                Data collected by AI • Check Instagram post for accuracy
+                {tDisclaimer('short')}
               </p>
             </div>
             {/* Products count and Sort */}
@@ -297,19 +302,19 @@ function HomeContent() {
               <div className="flex items-center gap-1.5">
                 <LayoutGrid className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">
-                  {pagination ? `${pagination.total} Products` : 'Products'}
+                  {pagination ? t('totalProducts', { total: pagination.total }) : t('totalProducts', { total: '' })}
                 </span>
               </div>
               <Select value={filters.sort || 'newest'} onValueChange={handleSortChange}>
                 <SelectTrigger className="w-auto h-7 px-2 gap-1 text-xs border-0 bg-transparent">
                   <ArrowUpDown className="h-3 w-3" />
-                  <SelectValue placeholder="Sort" />
+                  <SelectValue placeholder={t('sort')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="newest">Newest</SelectItem>
-                  <SelectItem value="oldest">Oldest</SelectItem>
-                  <SelectItem value="price_asc">Price ↑</SelectItem>
-                  <SelectItem value="price_desc">Price ↓</SelectItem>
+                  <SelectItem value="newest">{t('newest')}</SelectItem>
+                  <SelectItem value="oldest">{t('oldest')}</SelectItem>
+                  <SelectItem value="price_asc">{t('priceLowHigh')}</SelectItem>
+                  <SelectItem value="price_desc">{t('priceHighLow')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -320,14 +325,9 @@ function HomeContent() {
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-sm text-muted-foreground">
                 {isAdvancedSearch || searchQuery ? (
-                  <>
-                    {products.length} results
-                    {searchQuery && <> for &quot;{searchQuery}&quot;</>}
-                  </>
+                  searchQuery ? t('resultsFor', { count: products.length, query: searchQuery }) : t('results', { count: products.length })
                 ) : pagination ? (
-                  <>
-                    Showing {products.length} of {pagination.total} products
-                  </>
+                  t('showing', { count: products.length, total: pagination.total })
                 ) : null}
               </p>
               {isAdvancedSearch && (
@@ -335,17 +335,17 @@ function HomeContent() {
                   <Search className="h-3.5 w-3.5 text-muted-foreground" />
                   {advancedSearchParams.name && (
                     <Badge variant="secondary" className="text-xs">
-                      Name: {advancedSearchParams.name}
+                      {t('name')}: {advancedSearchParams.name}
                     </Badge>
                   )}
                   {advancedSearchParams.seller && (
                     <Badge variant="secondary" className="text-xs">
-                      Seller: {advancedSearchParams.seller}
+                      {t('seller')}: {advancedSearchParams.seller}
                     </Badge>
                   )}
                   {advancedSearchParams.attr_value && (
                     <Badge variant="secondary" className="text-xs">
-                      Attribute: {advancedSearchParams.attr_value}
+                      {t('attribute')}: {advancedSearchParams.attr_value}
                     </Badge>
                   )}
                 </div>
@@ -354,21 +354,21 @@ function HomeContent() {
 
             <div className="flex-1 flex justify-center px-4">
               <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight opacity-70">
-                Data are being collected by AI. Mistakes may be made, please check the Instagram post for better info.
+                {tDisclaimer('long')}
               </p>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort by:</span>
+              <span className="text-sm text-muted-foreground">{t('sortBy')}</span>
               <Select value={filters.sort || 'newest'} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Sort by" />
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder={t('sortBy')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="oldest">Oldest First</SelectItem>
-                  <SelectItem value="price_asc">Price: Low to High</SelectItem>
-                  <SelectItem value="price_desc">Price: High to Low</SelectItem>
+                  <SelectItem value="newest">{t('newest')}</SelectItem>
+                  <SelectItem value="oldest">{t('oldest')}</SelectItem>
+                  <SelectItem value="price_asc">{t('priceLowHigh')}</SelectItem>
+                  <SelectItem value="price_desc">{t('priceHighLow')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
