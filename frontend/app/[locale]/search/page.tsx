@@ -75,7 +75,7 @@ function SearchContent() {
                 ref={inputRef}
                 type="text"
                 placeholder={`Search ${groupLabel}...`}
-                className="pl-9 pr-9 h-10 bg-muted/50 border-0 rounded-lg focus-visible:ring-1 focus-visible:ring-muted-foreground/30"
+                className="pl-9 pr-9 h-10 bg-muted/50 border-0 rounded-lg focus-visible:ring-1 focus-visible:ring-muted-foreground/30 truncate"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
