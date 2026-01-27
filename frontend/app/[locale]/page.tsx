@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, LayoutGrid, ArrowUpDown, Search, Moon, Sun, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, LayoutGrid, ArrowUpDown, Search, Moon, Sun, X, Car, Smartphone } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useGroup } from '@/components/providers/group-provider';
 import { AdvancedSearchParams } from '@/lib/api';
@@ -141,6 +141,7 @@ function HomeContent() {
   const { theme, setTheme } = useTheme();
   const previousGroup = useRef(selectedGroup);
   const t = useTranslations('products');
+  const tCommon = useTranslations('common');
   const tDisclaimer = useTranslations('disclaimer');
 
   // Derive filters directly from URL - single source of truth
@@ -262,7 +263,7 @@ function HomeContent() {
                   <div className="flex items-center gap-2 h-10 px-3 pr-9 rounded-md border bg-muted/50 text-sm">
                     <Search className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className={searchQuery ? 'text-foreground truncate' : 'text-muted-foreground'}>
-                      {searchQuery || t('searchProducts')}
+                      {searchQuery || tCommon('search')}
                     </span>
                   </div>
                 </Link>

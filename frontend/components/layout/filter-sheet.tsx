@@ -52,24 +52,26 @@ export function FilterSheet({ filters, onFiltersChange, facets }: FilterSheetPro
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className="lg:hidden h-10 px-3 gap-1.5 bg-muted border-foreground/30 hover:bg-accent shadow-sm dark:bg-white/10 dark:border-white/30 dark:hover:bg-white/20">
-          <SlidersHorizontal className="h-4 w-4 text-foreground/80" />
-          <span className="text-sm font-medium">{t('title')}</span>
-          {activeFilterCount > 0 && (
-            <span className="bg-primary text-primary-foreground rounded-full min-w-[18px] h-[18px] px-1 text-[10px] flex items-center justify-center">
-              {activeFilterCount}
-            </span>
-          )}
+        <div className="relative">
+          <Button variant="outline" size="sm" className="lg:hidden h-10 px-3 gap-1.5 bg-muted border-foreground/30 hover:bg-accent shadow-sm dark:bg-white/10 dark:border-white/30 dark:hover:bg-white/20">
+            <SlidersHorizontal className="h-4 w-4 text-foreground/80" />
+            <span className="text-sm font-medium">{t('title')}</span>
+            {activeFilterCount > 0 && (
+              <span className="bg-primary text-primary-foreground rounded-full min-w-[18px] h-[18px] px-1 text-[10px] flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
           {currentGroup && (
             <span className={cn(
-              "rounded-full p-0.5",
+              "absolute -top-1.5 -right-1.5 rounded-full p-1 flex items-center justify-center",
               currentGroup.bgColor,
               currentGroup.color
             )}>
               {currentGroup.smallIcon}
             </span>
           )}
-        </Button>
+        </div>
       </SheetTrigger>
       <SheetContent side="left" className="w-[300px] sm:w-[350px] flex flex-col gap-0">
         <SheetHeader className="pb-2">
