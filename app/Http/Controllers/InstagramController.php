@@ -118,12 +118,9 @@ class InstagramController extends Controller
     {
         $shortcode = $postData['shortcode'] ?? 'unknown';
 
-        // Process main images
+        // Process main image (high resolution only)
         if (!empty($postData['image']['image_high'])) {
             $this->downloadAndSaveImage($postData['image']['image_high'], $postData, 'high', null, $postData['media_id']);
-        }
-        if (!empty($postData['image']['image_mid'])) {
-            $this->downloadAndSaveImage($postData['image']['image_mid'], $postData, 'mid', null, $postData['media_id']);
         }
 
         // Process main video if exists
@@ -140,9 +137,6 @@ class InstagramController extends Controller
 
                 if (isset($carousel['image']['image_high'])) {
                     $this->downloadAndSaveImage($carousel['image']['image_high'], $postData, 'high', $key, $mediaId);
-                }
-                if (isset($carousel['image']['image_mid'])) {
-                    $this->downloadAndSaveImage($carousel['image']['image_mid'], $postData, 'mid', $key, $mediaId);
                 }
 
                 if (isset($carousel['video_url'])) {
@@ -175,8 +169,7 @@ class InstagramController extends Controller
                 : "posts/{$shortcode}/video";
 
             $videoStoragePath = "{$basePath}/video.mp4";
-            Storage::disk('public')->makeDirectory(dirname($videoStoragePath));
-            Storage::disk('public')->put($videoStoragePath, $videoContent);
+            Storage::disk('r2')->put($videoStoragePath, $videoContent);
 
             $this->createMediaRecord($post, $videoStoragePath, 'video', 'video', $mediaId);
 
@@ -221,17 +214,25 @@ class InstagramController extends Controller
             ? "posts/{$shortcode}/carousel/{$carouselIndex}/frame_{$frame}.jpg"
             : "posts/{$shortcode}/video/frame_{$frame}.jpg";
 
-        Storage::disk('public')->makeDirectory(dirname($framePath));
+        // Use temp file for ffmpeg output, then upload to R2
+        $tempFrame = storage_path('app/temp/' . uniqid('frame_') . '.jpg');
 
         $command = sprintf(
             'ffmpeg -i %s -ss %d -vframes 1 -f image2 -filter:v "scale=w=\'min(640,iw)\':h=\'min(640,ih)\':force_original_aspect_ratio=decrease" %s 2>&1',
             escapeshellarg($videoPath),
             $time,
-            escapeshellarg(Storage::disk('public')->path($framePath))
+            escapeshellarg($tempFrame)
         );
 
         exec($command);
-        return file_exists(Storage::disk('public')->path($framePath)) ? $framePath : null;
+
+        if (file_exists($tempFrame)) {
+            Storage::disk('r2')->put($framePath, file_get_contents($tempFrame));
+            unlink($tempFrame);
+            return $framePath;
+        }
+
+        return null;
     }
 
     protected function createMediaRecord(array $post, string $path, string $type, string $usedFor, ?string $mediaId = null): void
@@ -266,8 +267,7 @@ class InstagramController extends Controller
                 ? "posts/{$shortcode}/carousel/{$carouselId}/{$type}.jpg"
                 : "posts/{$shortcode}/{$type}.jpg";
 
-            Storage::disk('public')->makeDirectory(dirname($path));
-            Storage::disk('public')->put($path, $response->body());
+            Storage::disk('r2')->put($path, $response->body());
 
             $this->createMediaRecord(
                 $post,
@@ -277,9 +277,61 @@ class InstagramController extends Controller
                 $mediaId
             );
 
+            // Create thumbnail from high-res image
+            $this->createThumbnail($response->body(), $post, $carouselId, $mediaId);
+
             return $path;
         } catch (\Exception $e) {
             Log::error("Image download failed for {$shortcode}: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    protected function createThumbnail(string $imageData, array $post, ?int $carouselId = null, ?string $mediaId = null): ?string
+    {
+        $shortcode = $post['shortcode'] ?? 'unknown';
+
+        try {
+            $image = imagecreatefromstring($imageData);
+            if (!$image) {
+                return null;
+            }
+
+            $origWidth = imagesx($image);
+            $origHeight = imagesy($image);
+
+            // Resize to 400px width, maintain aspect ratio
+            $thumbWidth = 400;
+            $thumbHeight = (int) round($origHeight * ($thumbWidth / $origWidth));
+
+            $thumb = imagecreatetruecolor($thumbWidth, $thumbHeight);
+            imagecopyresampled($thumb, $image, 0, 0, 0, 0, $thumbWidth, $thumbHeight, $origWidth, $origHeight);
+
+            // Save to buffer with 75% quality
+            ob_start();
+            imagejpeg($thumb, null, 75);
+            $thumbData = ob_get_clean();
+
+            imagedestroy($image);
+            imagedestroy($thumb);
+
+            $thumbPath = $carouselId
+                ? "posts/{$shortcode}/carousel/{$carouselId}/thumb.jpg"
+                : "posts/{$shortcode}/thumb.jpg";
+
+            Storage::disk('r2')->put($thumbPath, $thumbData);
+
+            $this->createMediaRecord(
+                $post,
+                $thumbPath,
+                $carouselId ? 'carousel_thumb' : 'image_thumb',
+                'image',
+                $mediaId
+            );
+
+            return $thumbPath;
+        } catch (\Exception $e) {
+            Log::warning("Thumbnail creation failed for {$shortcode}: " . $e->getMessage());
             return null;
         }
     }

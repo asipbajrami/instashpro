@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>InstashPro Logo Variants</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 40px;
+      margin: 0;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 40px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    .card img {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+    }
+    .card h3 {
+      margin: 0 0 6px;
+      color: #333;
+      font-size: 15px;
+    }
+    .card p {
+      margin: 0;
+      color: #888;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .preview {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fafafa;
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+    .preview.dark {
+      background: #1a1a1a;
+    }
+    .preview.dark span {
+      color: white;
+    }
+    .preview img {
+      width: 28px;
+      height: 28px;
+      margin: 0;
+    }
+    .preview span {
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .preview small {
+      display: block;
+      font-size: 9px;
+      color: #888;
+    }
+    @media (max-width: 1000px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <h1>InstashPro Logo Variants</h1>
+  <div class="grid">
+    <div class="card">
+      <img src="logo-v1.svg" alt="V1">
+      <h3>V1 - Original</h3>
+      <p>Purple-violet bag, IG handle</p>
+      <div class="preview">
+        <img src="logo-v1.svg">
+        <div><span>InstashPro</span><small>Powered by datafynow.ai</small></div>
+      </div>
+    </div>
+    <div class="card">
+      <img src="logo-v2.svg" alt="V2">
+      <h3>V2 - Indigo</h3>
+      <p>Deeper indigo, larger lens</p>
+      <div class="preview">
+        <img src="logo-v2.svg">
+        <div><span>InstashPro</span><small>Powered by datafynow.ai</small></div>
+      </div>
+    </div>
+    <div class="card">
+      <img src="logo-v3.svg" alt="V3">
+      <h3>V3 - Deep Purple</h3>
+      <p>Dark purple, pink-orange handle</p>
+      <div class="preview">
+        <img src="logo-v3.svg">
+        <div><span>InstashPro</span><small>Powered by datafynow.ai</small></div>
+      </div>
+    </div>
+    <div class="card">
+      <img src="logo-v4.svg" alt="V4">
+      <h3>V4 - Full Gradient</h3>
+      <p>Full IG gradient everywhere</p>
+      <div class="preview">
+        <img src="logo-v4.svg">
+        <div><span>InstashPro</span><small>Powered by datafynow.ai</small></div>
+      </div>
+    </div>
+    <div class="card">
+      <img src="logo-v5.svg" alt="V5">
+      <h3>V5 - Dark Navy</h3>
+      <p>Navy bag, gradient camera</p>
+      <div class="preview dark">
+        <img src="logo-v5.svg">
+        <div><span>InstashPro</span><small>Powered by datafynow.ai</small></div>
+      </div>
+    </div>
+    <div class="card">
+      <img src="logo-v6.svg" alt="V6">
+      <h3>V6 - Rounded</h3>
+      <p>More rounded bag corners</p>
+      <div class="preview">
+        <img src="logo-v6.svg">
+        <div><span>InstashPro</span><small>Powered by datafynow.ai</small></div>
+      </div>
+    </div>
+    <div class="card">
+      <img src="logo-v7.svg" alt="V7">
+      <h3>V7 - Black</h3>
+      <p>Black bag, gradient accents</p>
+      <div class="preview dark">
+        <img src="logo-v7.svg">
+        <div><span>InstashPro</span><small>Powered by datafynow.ai</small></div>
+      </div>
+    </div>
+    <div class="card">
+      <img src="logo-v8.svg" alt="V8">
+      <h3>V8 - Bold</h3>
+      <p>Lighter purple, thicker lines</p>
+      <div class="preview">
+        <img src="logo-v8.svg">
+        <div><span>InstashPro</span><small>Powered by datafynow.ai</small></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

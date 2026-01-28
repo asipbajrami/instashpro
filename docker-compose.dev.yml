@@ -111,6 +111,14 @@ services:
 
       # Set to true on first run to seed database
       SEED_DATABASE: ${SEED_DATABASE:-false}
+
+      # Cloudflare R2 Storage
+      FILESYSTEM_DISK: ${FILESYSTEM_DISK:-r2}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET: ${R2_BUCKET:-}
+      R2_ENDPOINT: ${R2_ENDPOINT:-}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
     volumes:
       # Mount source code for live editing
       - .:/var/www/html

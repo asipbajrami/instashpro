@@ -3,9 +3,16 @@
 namespace App\Http\Resources;
 
 use App\Models\InstagramMedia;
+use App\Services\MediaPreloader;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
+/**
+ * Full product resource for detail views.
+ * Includes all images and instagram link.
+ * For catalog views, use ProductListResource instead.
+ */
 class ProductResource extends JsonResource
 {
     /**
@@ -48,7 +55,25 @@ class ProductResource extends JsonResource
     }
 
     /**
-     * Get Instagram post link for this product
+     * Get thumbnail URL, converting legacy localhost URLs to R2 URLs.
+     */
+    protected function getThumbnailUrl(): ?string
+    {
+        if (empty($this->thumbnail_url)) {
+            return null;
+        }
+
+        // Extract path from legacy localhost URLs
+        if (preg_match('#/storage/(posts/.+)$#', $this->thumbnail_url, $matches)) {
+            return Storage::disk('r2')->url($matches[1]);
+        }
+
+        // Already an R2 URL or external URL
+        return $this->thumbnail_url;
+    }
+
+    /**
+     * Get Instagram post link for this product.
      */
     protected function getInstagramLink(): ?string
     {
@@ -61,7 +86,13 @@ class ProductResource extends JsonResource
             return null;
         }
 
-        $media = InstagramMedia::find($mediaIds[0]);
+        // Use preloaded cache or direct query
+        if (MediaPreloader::isPreloaded()) {
+            $media = MediaPreloader::getById($mediaIds[0]);
+        } else {
+            $media = InstagramMedia::find($mediaIds[0]);
+        }
+
         if ($media && $media->shortcode) {
             return 'https://www.instagram.com/p/' . $media->shortcode . '/';
         }
@@ -70,7 +101,7 @@ class ProductResource extends JsonResource
     }
 
     /**
-     * Get images for this specific product based on instagram_media_ids
+     * Get images for this specific product based on instagram_media_ids.
      */
     protected function getImages(): array
     {
@@ -78,48 +109,39 @@ class ProductResource extends JsonResource
             return [];
         }
 
-        // Deduplicate media IDs to prevent duplicate images
         $mediaIds = array_unique(array_filter(explode('_', $this->instagram_media_ids)));
-
         if (empty($mediaIds)) {
             return [];
         }
 
-        $mediaItems = InstagramMedia::whereIn('id', $mediaIds)
-            ->orderByRaw('FIELD(id, ' . implode(',', $mediaIds) . ')')
-            ->get();
+        // Use preloaded cache or direct query
+        if (MediaPreloader::isPreloaded()) {
+            $mediaItems = collect($mediaIds)
+                ->map(fn ($id) => MediaPreloader::getById($id))
+                ->filter();
+        } else {
+            $mediaItems = InstagramMedia::whereIn('id', $mediaIds)
+                ->orderByRaw('FIELD(id, ' . implode(',', $mediaIds) . ')')
+                ->get();
+        }
 
         $images = [];
-        $seenIds = []; // Track seen image IDs to prevent duplicates
-        foreach ($mediaItems as $index => $media) {
-            $highQualityMedia = null;
-            if (in_array($media->type, ['image_mid', 'carousel_mid'])) {
-                $highType = str_replace('_mid', '_high', $media->type);
-                $highQualityMedia = InstagramMedia::where('instagram_post_id', $media->instagram_post_id)
-                    ->where('type', $highType)
-                    ->where('media_id', $media->media_id)
-                    ->first();
-            }
-
-            $finalMedia = $highQualityMedia ?? $media;
-
-            // Skip if we've already added this image
-            if (in_array($finalMedia->id, $seenIds)) {
+        $seenIds = [];
+        foreach ($mediaItems as $media) {
+            if (in_array($media->id, $seenIds)) {
                 continue;
             }
-            $seenIds[] = $finalMedia->id;
+            $seenIds[] = $media->id;
 
             $images[] = [
-                'id' => $finalMedia->id,
-                'url' => $finalMedia->media_path ? url('/storage/' . $finalMedia->media_path) : null,
-                'type' => $finalMedia->type,
+                'id' => $media->id,
+                'url' => $media->media_path ? Storage::disk('r2')->url($media->media_path) : null,
+                'type' => $media->type,
             ];
         }
 
-        // Reverse order so main Instagram image (stored last) appears first
         $images = array_reverse($images);
 
-        // Mark first image as primary
         if (!empty($images)) {
             $images[0]['is_primary'] = true;
             for ($i = 1; $i < count($images); $i++) {
@@ -128,39 +150,5 @@ class ProductResource extends JsonResource
         }
 
         return $images;
-    }
-
-    /**
-     * Get thumbnail URL (mid-quality image for grid views)
-     */
-    protected function getThumbnailUrl(): ?string
-    {
-        // First try to get a mid-quality image from media
-        if (!empty($this->instagram_media_ids)) {
-            $mediaIds = array_filter(explode('_', $this->instagram_media_ids));
-            if (!empty($mediaIds)) {
-                // Look for mid-quality version of first media
-                $firstMedia = InstagramMedia::find($mediaIds[0]);
-                if ($firstMedia) {
-                    // Try to find mid-quality version
-                    $midMedia = InstagramMedia::where('instagram_post_id', $firstMedia->instagram_post_id)
-                        ->where('media_id', $firstMedia->media_id)
-                        ->whereIn('type', ['image_mid', 'carousel_mid'])
-                        ->first();
-                    
-                    if ($midMedia && $midMedia->media_path) {
-                        return url('/storage/' . $midMedia->media_path);
-                    }
-                    
-                    // Fall back to original media if no mid version
-                    if ($firstMedia->media_path) {
-                        return url('/storage/' . $firstMedia->media_path);
-                    }
-                }
-            }
-        }
-        
-        // Fall back to denormalized thumbnail_url
-        return $this->thumbnail_url;
     }
 }

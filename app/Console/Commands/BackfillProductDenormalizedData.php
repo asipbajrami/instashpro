@@ -169,8 +169,8 @@ class BackfillProductDenormalizedData extends Command
 
                 // Image URLs - prioritize local storage
                 $mediaPath = $mediaPaths[$firstMediaId] ?? null;
-                if ($mediaPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($mediaPath)) {
-                    $localUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($mediaPath);
+                if ($mediaPath && \Illuminate\Support\Facades\Storage::disk('r2')->exists($mediaPath)) {
+                    $localUrl = \Illuminate\Support\Facades\Storage::disk('r2')->url($mediaPath);
                     $data['primary_image_url'] = $localUrl;
                     $data['thumbnail_url'] = $localUrl;
                 } else {

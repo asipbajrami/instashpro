@@ -106,8 +106,8 @@ class ProductProcessorController extends Controller
         $validImages = [];
         foreach ($medias as $media) {
             $path = $media->media_path;
-            if (Storage::disk('public')->exists($path) &&
-                in_array(Storage::disk('public')->mimeType($path), ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
+            if (Storage::disk('r2')->exists($path) &&
+                in_array(Storage::disk('r2')->mimeType($path), ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
                 $validImages[] = [
                     'path' => $path,
                     'media_id' => $media->id
@@ -207,8 +207,8 @@ class ProductProcessorController extends Controller
         foreach ($medias as $media) {
             // Use public disk explicitly (Laravel 12 default local disk points to app/private)
             $path = $media->media_path;
-            if (Storage::disk('public')->exists($path) &&
-                in_array(Storage::disk('public')->mimeType($path), ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
+            if (Storage::disk('r2')->exists($path) &&
+                in_array(Storage::disk('r2')->mimeType($path), ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
                 $validImages[] = [
                     'path' => $path,
                     'media_id' => $media->id
@@ -345,7 +345,7 @@ class ProductProcessorController extends Controller
         $base64Image = null;
         if (!empty($validImages)) {
             $firstImagePath = $validImages[0]['path'];
-            $imageContent = Storage::disk('public')->get($firstImagePath);
+            $imageContent = Storage::disk('r2')->get($firstImagePath);
             if ($imageContent) {
                 $base64Image = base64_encode($imageContent);
             }
@@ -357,7 +357,7 @@ class ProductProcessorController extends Controller
 
     private function getPostMedia(InstagramPost $post)
     {
-        return InstagramMedia::whereIn('type', ['carousel_mid', 'image_mid', 'carousel_high', 'image_high'])
+        return InstagramMedia::whereIn('type', ['carousel_high', 'image_high'])
             ->where('instagram_post_id', $post->post_id)
             ->orderBy('media_id')
             ->get();
@@ -380,9 +380,21 @@ class ProductProcessorController extends Controller
             $firstMedia = InstagramMedia::find((int) $mediaIdArray[0]);
             if ($firstMedia) {
                 // Use local storage URL if media_path exists
-                if ($firstMedia->media_path && Storage::disk('public')->exists($firstMedia->media_path)) {
-                    $primaryImageUrl = Storage::disk('public')->url($firstMedia->media_path);
-                    $thumbnailUrl = $primaryImageUrl; // Use same URL for thumbnail
+                if ($firstMedia->media_path && Storage::disk('r2')->exists($firstMedia->media_path)) {
+                    $primaryImageUrl = Storage::disk('r2')->url($firstMedia->media_path);
+
+                    // Look for thumbnail version
+                    $thumbType = str_replace('_high', '_thumb', $firstMedia->type);
+                    $thumbMedia = InstagramMedia::where('instagram_post_id', $firstMedia->instagram_post_id)
+                        ->where('type', $thumbType)
+                        ->where('media_id', $firstMedia->media_id)
+                        ->first();
+
+                    if ($thumbMedia && $thumbMedia->media_path && Storage::disk('r2')->exists($thumbMedia->media_path)) {
+                        $thumbnailUrl = Storage::disk('r2')->url($thumbMedia->media_path);
+                    } else {
+                        $thumbnailUrl = $primaryImageUrl; // Fallback to high-res
+                    }
                 } else {
                     // Fallback to CDN URLs
                     $primaryImageUrl = $firstMedia->display_url ?? $post->display_url;

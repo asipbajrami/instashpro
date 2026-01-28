@@ -84,7 +84,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <div className="mt-1.5 flex items-end justify-between gap-1.5">
             <div className="flex flex-col">
               {!hasPrice ? (
-                <span className="text-base md:text-lg font-medium text-muted-foreground">{t('noPrice')}</span>
+                <span className="text-sm font-medium text-muted-foreground">{t('noPrice')}</span>
               ) : hasDiscount ? (
                 <>
                   <span className="text-base md:text-lg font-bold text-red-500 leading-tight">

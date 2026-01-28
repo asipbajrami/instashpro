@@ -78,7 +78,6 @@ class InstagramPostService extends InstagramBaseService
             'media_type' => $post['media_type'],
             'image' => [
                 'image_high' => $processedImageVersions['image_high'],
-                'image_mid' => $processedImageVersions['image_mid']
             ],
             'images_carousel' => $processedCarouselMedia,
         ];
@@ -89,7 +88,6 @@ class InstagramPostService extends InstagramBaseService
         if (empty($imageVersions)) {
             return [
                 'image_high' => null,
-                'image_mid' => null
             ];
         }
 
@@ -97,30 +95,9 @@ class InstagramPostService extends InstagramBaseService
             return ($b['width'] * $b['height']) - ($a['width'] * $a['height']);
         });
 
-        $imageHighUrl = $imageVersions[0]['url'] ?? null;
-        $imageMidUrl = $this->findMediumResolutionUrl($imageVersions) ?? $imageHighUrl;
-
         return [
-            'image_high' => $imageHighUrl,
-            'image_mid' => $imageMidUrl
+            'image_high' => $imageVersions[0]['url'] ?? null,
         ];
-    }
-
-    private function findMediumResolutionUrl(array $imageVersions): ?string
-    {
-        foreach ($imageVersions as $version) {
-            if ($version['width'] >= 500 && $version['width'] <= 710) {
-                return $version['url'];
-            }
-        }
-
-        foreach ($imageVersions as $version) {
-            if ($version['width'] > 710 && $version['width'] <= 1000) {
-                return $version['url'];
-            }
-        }
-
-        return null;
     }
 
     private function processCarouselMedia(array $carouselMedia): array
@@ -139,7 +116,6 @@ class InstagramPostService extends InstagramBaseService
                 'thumbnail_url' => end($imageVersions)['url'] ?? null,
                 'image' => [
                     'image_high' => $processedVersions['image_high'],
-                    'image_mid' => $processedVersions['image_mid']
                 ]
             ];
 

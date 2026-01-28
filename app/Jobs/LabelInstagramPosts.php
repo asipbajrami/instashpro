@@ -97,15 +97,15 @@ class LabelInstagramPosts implements ShouldQueue
         $base64Image = null;
 
         // Get first valid image for classification
-        $media = InstagramMedia::whereIn('type', ['carousel_mid', 'image_mid', 'carousel_high', 'image_high'])
+        $media = InstagramMedia::whereIn('type', ['carousel_high', 'image_high'])
             ->where('instagram_post_id', $post->post_id)
             ->orderBy('media_id')
             ->first();
 
-        if ($media && Storage::disk('public')->exists($media->media_path)) {
-            $mimeType = Storage::disk('public')->mimeType($media->media_path);
+        if ($media && Storage::disk('r2')->exists($media->media_path)) {
+            $mimeType = Storage::disk('r2')->mimeType($media->media_path);
             if (in_array($mimeType, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
-                $base64Image = base64_encode(Storage::disk('public')->get($media->media_path));
+                $base64Image = base64_encode(Storage::disk('r2')->get($media->media_path));
             }
         }
 

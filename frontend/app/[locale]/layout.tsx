@@ -30,6 +30,9 @@ export async function generateMetadata({
   return {
     title: t?.title || 'InstashPro - Product Catalog | Powered by datafynow.ai',
     description: t?.description || 'Browse our product catalog - Powered by datafynow.ai',
+    icons: {
+      icon: '/favicon.svg',
+    },
   };
 }
 

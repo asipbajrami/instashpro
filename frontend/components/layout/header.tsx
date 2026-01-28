@@ -2,7 +2,8 @@
 
 import { Link, useRouter, usePathname } from '@/i18n/navigation';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, ShoppingBag, Car, Smartphone, ChevronDown, ChevronRight, Moon, Sun, SlidersHorizontal, X, Tag } from 'lucide-react';
+import { Search, Car, Smartphone, ChevronDown, ChevronRight, Moon, Sun, SlidersHorizontal, X, Tag } from 'lucide-react';
+import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
@@ -169,7 +170,7 @@ export function Header() {
     selectedGroup || undefined,
     true
   );
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const desktopMenuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -293,7 +294,7 @@ export function Header() {
       <div className="w-full flex h-14 items-center">
         {/* Logo - Fixed at far left, hidden on mobile */}
         <Link href="/" className="hidden sm:flex items-center gap-2 shrink-0 pl-4 sm:pl-6 lg:pl-8">
-          <ShoppingBag className="h-6 w-6" />
+          <Image src={resolvedTheme === 'dark' ? '/logo-dark.svg' : '/logo.svg'} alt="InstashPro" width={36} height={36} className="h-9 w-9" />
           <div className="hidden sm:block">
             <span className="text-lg font-bold leading-none">InstashPro</span>
             <span className="block text-[10px] text-muted-foreground leading-tight">{tHeader('poweredBy')}</span>

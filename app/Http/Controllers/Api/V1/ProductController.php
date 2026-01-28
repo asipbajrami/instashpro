@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\ProductCollection;
+use App\Http\Resources\ProductListCollection;
+use App\Http\Resources\ProductListResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Category;
 use App\Models\InstagramMedia;
@@ -15,6 +16,7 @@ use App\Services\EmbeddingService;
 use App\Services\Search\TypesenseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
@@ -195,8 +197,8 @@ class ProductController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Product::query()
-            ->with(['categories', 'attributeValues.attribute']);
+        // No eager loading needed - ProductListResource uses only denormalized columns
+        $query = Product::query();
 
         $this->applyFilters($query, $request);
         $this->applySorting($query, $request);
@@ -208,7 +210,7 @@ class ProductController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => (new ProductCollection($products))->withFacets($facets)->toArray($request),
+            'data' => (new ProductListCollection($products))->withFacets($facets)->toArray($request),
         ]);
     }
 
@@ -273,9 +275,8 @@ class ProductController extends Controller
                 $typesenseResult['hits']
             );
 
-            // Fetch products from MySQL with relationships
+            // Fetch products from MySQL (no eager loading - list view uses denormalized columns)
             $products = Product::query()
-                ->with(['categories', 'attributeValues.attribute'])
                 ->whereIn('id', $productIds)
                 ->get();
 
@@ -294,7 +295,7 @@ class ProductController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'items' => ProductResource::collection($paginatedProducts),
+                    'items' => ProductListResource::collection($paginatedProducts),
                     'pagination' => [
                         'current_page' => $page,
                         'per_page' => $perPage,
@@ -311,7 +312,6 @@ class ProductController extends Controller
         $searchTerm = "%{$query}%";
 
         $productsQuery = Product::query()
-            ->with(['categories', 'attributeValues.attribute'])
             ->where(function ($q) use ($searchTerm) {
                 $q->where('name', 'LIKE', $searchTerm)
                   ->orWhere('description', 'LIKE', $searchTerm)
@@ -334,7 +334,7 @@ class ProductController extends Controller
         return response()->json([
             'success' => true,
             'data' => array_merge(
-                (new ProductCollection($products))->withFacets($facets)->toArray($request),
+                (new ProductListCollection($products))->withFacets($facets)->toArray($request),
                 ['search_type' => 'text']
             ),
         ]);
@@ -349,8 +349,7 @@ class ProductController extends Controller
         $group = $request->get('group');
         $perPage = min($request->get('per_page', 24), 100);
 
-        $productsQuery = Product::query()
-            ->with(['categories', 'attributeValues.attribute']);
+        $productsQuery = Product::query();
 
         // Filter by group
         if ($group) {
@@ -443,11 +442,12 @@ class ProductController extends Controller
         $this->applySorting($productsQuery, $request);
 
         $products = $productsQuery->paginate($perPage);
+
         $facets = $this->computeFacets($request);
 
         return response()->json([
             'success' => true,
-            'data' => (new ProductCollection($products))->withFacets($facets)->toArray($request),
+            'data' => (new ProductListCollection($products))->withFacets($facets)->toArray($request),
         ]);
     }
 
@@ -510,31 +510,34 @@ class ProductController extends Controller
                 ]);
             }
 
+            // Get media records with their post_id for sorting
             $mediaRecords = InstagramMedia::whereIn('instagram_post_id', $postIds)
-                ->pluck('id')
-                ->toArray();
+                ->get(['id', 'instagram_post_id']);
+
+            $mediaToPost = $mediaRecords->pluck('instagram_post_id', 'id')->toArray();
+            $mediaIds = $mediaRecords->pluck('id')->toArray();
 
             $products = Product::query()
-                ->with(['categories', 'attributeValues.attribute'])
-                ->where(function ($q) use ($mediaRecords) {
-                    foreach ($mediaRecords as $mediaId) {
+                ->where(function ($q) use ($mediaIds) {
+                    foreach ($mediaIds as $mediaId) {
                         $q->orWhere('instagram_media_ids', 'LIKE', "%{$mediaId}%");
                     }
                 })
                 ->limit($limit)
                 ->get();
 
-            $products = $products->sortBy(function ($product) use ($scores) {
-                $mediaIds = explode('_', $product->instagram_media_ids ?? '');
-                $firstMedia = InstagramMedia::find($mediaIds[0] ?? 0);
-                $postId = $firstMedia?->instagram_post_id;
+            // Sort by similarity score using pre-built mapping
+            $products = $products->sortBy(function ($product) use ($scores, $mediaToPost) {
+                $productMediaIds = explode('_', $product->instagram_media_ids ?? '');
+                $firstMediaId = (int) ($productMediaIds[0] ?? 0);
+                $postId = $mediaToPost[$firstMediaId] ?? null;
                 return $scores[$postId] ?? 999;
             })->values();
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'items' => ProductResource::collection($products),
+                    'items' => ProductListResource::collection($products),
                     'pagination' => [
                         'current_page' => 1,
                         'per_page' => $limit,
@@ -615,31 +618,34 @@ class ProductController extends Controller
                 ]);
             }
 
+            // Get media records with their post_id for sorting
             $mediaRecords = InstagramMedia::whereIn('instagram_post_id', $postIds)
-                ->pluck('id')
-                ->toArray();
+                ->get(['id', 'instagram_post_id']);
+
+            $mediaToPost = $mediaRecords->pluck('instagram_post_id', 'id')->toArray();
+            $mediaIds = $mediaRecords->pluck('id')->toArray();
 
             $products = Product::query()
-                ->with(['categories', 'attributeValues.attribute'])
-                ->where(function ($q) use ($mediaRecords) {
-                    foreach ($mediaRecords as $mediaId) {
+                ->where(function ($q) use ($mediaIds) {
+                    foreach ($mediaIds as $mediaId) {
                         $q->orWhere('instagram_media_ids', 'LIKE', "%{$mediaId}%");
                     }
                 })
                 ->limit($limit)
                 ->get();
 
-            $products = $products->sortBy(function ($product) use ($scores) {
-                $mediaIds = explode('_', $product->instagram_media_ids ?? '');
-                $firstMedia = InstagramMedia::find($mediaIds[0] ?? 0);
-                $postId = $firstMedia?->instagram_post_id;
+            // Sort by similarity score using pre-built mapping
+            $products = $products->sortBy(function ($product) use ($scores, $mediaToPost) {
+                $productMediaIds = explode('_', $product->instagram_media_ids ?? '');
+                $firstMediaId = (int) ($productMediaIds[0] ?? 0);
+                $postId = $mediaToPost[$firstMediaId] ?? null;
                 return $scores[$postId] ?? 999;
             })->values();
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'items' => ProductResource::collection($products),
+                    'items' => ProductListResource::collection($products),
                     'pagination' => [
                         'current_page' => 1,
                         'per_page' => $limit,
@@ -658,46 +664,66 @@ class ProductController extends Controller
     }
 
     /**
-     * Get all descendant category IDs for a given category
+     * Get all descendant category IDs for a given category.
+     * Results are cached for 24 hours to avoid recursive queries.
      */
     protected function getCategoryWithDescendants(int $categoryId): array
+    {
+        return Cache::remember("category_descendants_{$categoryId}", 86400, function () use ($categoryId) {
+            $ids = [$categoryId];
+            $children = Category::where('parent_id', $categoryId)->pluck('id')->toArray();
+
+            foreach ($children as $childId) {
+                $ids = array_merge($ids, $this->getCategoryWithDescendantsUncached($childId));
+            }
+
+            return $ids;
+        });
+    }
+
+    /**
+     * Uncached version for recursive calls within cache closure
+     */
+    private function getCategoryWithDescendantsUncached(int $categoryId): array
     {
         $ids = [$categoryId];
         $children = Category::where('parent_id', $categoryId)->pluck('id')->toArray();
 
         foreach ($children as $childId) {
-            $ids = array_merge($ids, $this->getCategoryWithDescendants($childId));
+            $ids = array_merge($ids, $this->getCategoryWithDescendantsUncached($childId));
         }
 
         return $ids;
     }
 
     /**
-     * Determine which group (tech or car) a category belongs to based on its root
+     * Determine which group (tech or car) a category belongs to based on its root.
+     * Results are cached for 24 hours.
      */
     protected function getGroupFromCategoryId(int $categoryId): ?string
     {
-        // Get the category and traverse up to find root
-        $category = Category::find($categoryId);
-        if (!$category) {
-            return null;
-        }
-
-        // Traverse up to root
-        while ($category->parent_id) {
-            $category = Category::find($category->parent_id);
+        return Cache::remember("category_group_{$categoryId}", 86400, function () use ($categoryId) {
+            $category = Category::find($categoryId);
             if (!$category) {
                 return null;
             }
-        }
 
-        // Map root category ID to group
-        $rootToGroup = [
-            1 => 'tech',   // Tech & Electronics
-            100 => 'car',  // Cars & Vehicles
-        ];
+            // Traverse up to root
+            while ($category->parent_id) {
+                $category = Category::find($category->parent_id);
+                if (!$category) {
+                    return null;
+                }
+            }
 
-        return $rootToGroup[$category->id] ?? null;
+            // Map root category ID to group
+            $rootToGroup = [
+                1 => 'tech',   // Tech & Electronics
+                100 => 'car',  // Cars & Vehicles
+            ];
+
+            return $rootToGroup[$category->id] ?? null;
+        });
     }
 
     /**
@@ -850,11 +876,26 @@ class ProductController extends Controller
     /**
      * Compute facets for filtering UI
      * Filters by group if provided
+     * Results cached for 5 minutes to reduce query load
      */
     protected function computeFacets(Request $request): array
     {
         $group = $request->get('group');
+        $categoryId = $request->get('category_id');
 
+        // Cache facets for 5 minutes (300 seconds)
+        $cacheKey = "facets_{$group}_{$categoryId}";
+
+        return Cache::remember($cacheKey, 300, function () use ($request, $group) {
+            return $this->computeFacetsUncached($request, $group);
+        });
+    }
+
+    /**
+     * Uncached facet computation
+     */
+    protected function computeFacetsUncached(Request $request, ?string $group): array
+    {
         // Get categories filtered by group
         $categoriesQuery = Category::withCount('products')
             ->where('is_temp', false)
