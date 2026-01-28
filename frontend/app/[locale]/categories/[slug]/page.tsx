@@ -35,7 +35,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       const params = new URLSearchParams();
       if (newPage > 1) params.set('page', String(newPage));
       const queryString = params.toString();
-      router.push(`/categories/${slug}${queryString ? `?${queryString}` : ''}`, { scroll: false });
+      router.push(`/categories/${slug}${queryString ? `?${queryString}` : ''}`, { scroll: true });
     },
     [router, slug],
   );

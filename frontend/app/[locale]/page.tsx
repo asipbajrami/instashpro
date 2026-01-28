@@ -212,7 +212,7 @@ function HomeContent() {
     (newFilters: FilterState) => {
       // Reset to page 1 when filters change
       const url = buildUrlParams(newFilters, searchQuery);
-      router.push(url, { scroll: false });
+      router.push(url, { scroll: true });
     },
     [router, searchQuery],
   );
@@ -221,7 +221,7 @@ function HomeContent() {
   const navigateToPage = useCallback(
     (newPage: number) => {
       const url = buildUrlParams(filters, searchQuery, newPage);
-      router.push(url, { scroll: false });
+      router.push(url, { scroll: true });
     },
     [router, filters, searchQuery],
   );
