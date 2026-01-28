@@ -9,6 +9,7 @@ import {
   LogOut,
   Play,
   GitMerge,
+  Archive,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -30,6 +31,7 @@ const navigation = [
   { name: 'Attributes Overview', href: '/attributes-overview', icon: GitMerge },
   { name: 'Structure Outputs', href: '/structure-outputs', icon: Settings },
   { name: 'Structure Groups', href: '/structure-groups', icon: Layers },
+  { name: 'Backups', href: '/backups', icon: Archive },
 ];
 
 export function SidebarContent({ onLogout, onNavigate }: SidebarContentProps) {

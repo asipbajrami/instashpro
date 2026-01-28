@@ -20,7 +20,7 @@ export function useProduct(id: number) {
   });
 }
 
-export function useSearchProducts(query: string, perPage = 24, group?: 'car' | 'tech') {
+export function useSearchProducts(query: string, perPage = 40, group?: 'car' | 'tech') {
   return useQuery({
     queryKey: ['products', 'search', query, perPage, group],
     queryFn: () => searchProducts(query, perPage, group),

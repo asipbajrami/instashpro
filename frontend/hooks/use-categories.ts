@@ -12,7 +12,7 @@ export function useCategories(group?: 'car' | 'tech') {
   });
 }
 
-export function useCategoryWithProducts(slug: string, page = 1, perPage = 24) {
+export function useCategoryWithProducts(slug: string, page = 1, perPage = 40) {
   const locale = useLocale();
   return useQuery({
     queryKey: ['category', slug, page, perPage, locale],

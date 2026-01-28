@@ -11,6 +11,7 @@ import { AttributeOutputsOverview } from '@/pages/AttributeOutputsOverview';
 import { StructureOutputs } from '@/pages/StructureOutputs';
 import { StructureGroups } from '@/pages/StructureGroups';
 import { ScrapeRuns } from '@/pages/ScrapeRuns';
+import { Backups } from '@/pages/Backups';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +38,7 @@ function App() {
               <Route path="/attributes-overview" element={<AttributeOutputsOverview />} />
               <Route path="/structure-outputs" element={<StructureOutputs />} />
               <Route path="/structure-groups" element={<StructureGroups />} />
+              <Route path="/backups" element={<Backups />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, Suspense, useRef } from 'react';
+import { useCallback, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter, Link } from '@/i18n/navigation';
 import { useProducts, useSearchProducts, useAdvancedSearch } from '@/hooks/use-products';
@@ -31,7 +31,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 // No localStorage needed - this is the idiomatic React/Next.js approach.
 // ============================================================================
 
-function buildUrlParams(filters: FilterState, searchQuery?: string): string {
+function buildUrlParams(filters: FilterState, searchQuery?: string, page?: number): string {
   const params = new URLSearchParams();
   if (filters.category) params.set('category', filters.category);
   if (filters.category_id !== undefined) params.set('category_id', String(filters.category_id));
@@ -43,6 +43,7 @@ function buildUrlParams(filters: FilterState, searchQuery?: string): string {
   if (filters.sort) params.set('sort', filters.sort);
   if (filters.has_price) params.set('has_price', '1');
   if (searchQuery) params.set('q', searchQuery);
+  if (page && page > 1) params.set('page', String(page));
 
   // Serialize attributes as attr[AttributeName]=value1,value2
   if (filters.attributes) {
@@ -147,7 +148,7 @@ function HomeContent() {
   // Derive filters directly from URL - single source of truth
   const filters = parseFiltersFromParams(searchParams);
   const searchQuery = searchParams.get('q') || '';
-  const [page, setPage] = useState(1);
+  const page = Number(searchParams.get('page')) || 1;
 
   // Parse advanced search params
   const advancedSearchParams: AdvancedSearchParams = {
@@ -156,7 +157,7 @@ function HomeContent() {
     seller: searchParams.get('seller') || undefined,
     attr_value: searchParams.get('attr_value') || undefined,
     group: selectedGroup || undefined,
-    per_page: 24,
+    per_page: 40,
     page,
   };
 
@@ -167,10 +168,6 @@ function HomeContent() {
     advancedSearchParams.attr_value
   );
 
-  // Reset page when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [searchParams]);
 
   // Reset filters when switching between groups (tech <-> cars)
   useEffect(() => {
@@ -187,13 +184,13 @@ function HomeContent() {
           ...filters,
           group: selectedGroup || undefined,
           page,
-          per_page: 24,
+          per_page: 40,
         },
   );
 
   const { data: searchData, isLoading: searchLoading } = useSearchProducts(
     searchQuery && !isAdvancedSearch ? searchQuery : '',
-    24,
+    40,
     selectedGroup || undefined,
   );
 
@@ -213,10 +210,20 @@ function HomeContent() {
   // Update URL when filters change - this is the only place we modify filters
   const updateFilters = useCallback(
     (newFilters: FilterState) => {
+      // Reset to page 1 when filters change
       const url = buildUrlParams(newFilters, searchQuery);
       router.push(url, { scroll: false });
     },
     [router, searchQuery],
+  );
+
+  // Navigate to a specific page
+  const navigateToPage = useCallback(
+    (newPage: number) => {
+      const url = buildUrlParams(filters, searchQuery, newPage);
+      router.push(url, { scroll: false });
+    },
+    [router, filters, searchQuery],
   );
 
   const handleSortChange = (value: string) => {
@@ -385,7 +392,7 @@ function HomeContent() {
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 text-muted-foreground"
-                onClick={() => setPage(1)}
+                onClick={() => navigateToPage(1)}
                 disabled={page <= 1}
               >
                 <ChevronsLeft className="h-3.5 w-3.5" />
@@ -394,7 +401,7 @@ function HomeContent() {
                 variant="outline"
                 size="icon"
                 className="h-8 w-8 ml-1"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => navigateToPage(Math.max(1, page - 1))}
                 disabled={page <= 1}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -408,7 +415,7 @@ function HomeContent() {
                 variant="outline"
                 size="icon"
                 className="h-8 w-8 mr-1"
-                onClick={() => setPage((p) => Math.min(pagination.total_pages, p + 1))}
+                onClick={() => navigateToPage(Math.min(pagination.total_pages, page + 1))}
                 disabled={page >= pagination.total_pages}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -417,7 +424,7 @@ function HomeContent() {
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 text-muted-foreground"
-                onClick={() => setPage(pagination.total_pages)}
+                onClick={() => navigateToPage(pagination.total_pages)}
                 disabled={page >= pagination.total_pages}
               >
                 <ChevronsRight className="h-3.5 w-3.5" />

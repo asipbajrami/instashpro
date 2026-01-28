@@ -53,7 +53,7 @@ export async function getProduct(id: number): Promise<ProductResponse> {
   return data;
 }
 
-export async function searchProducts(query: string, perPage = 24, group?: 'car' | 'tech'): Promise<ProductsResponse> {
+export async function searchProducts(query: string, perPage = 40, group?: 'car' | 'tech'): Promise<ProductsResponse> {
   const params: Record<string, string | number> = { q: query, per_page: perPage };
   if (group) params.group = group;
 
@@ -178,7 +178,7 @@ export async function getCategories(group?: 'car' | 'tech', locale?: string): Pr
 export async function getCategoryWithProducts(
   slug: string,
   page = 1,
-  perPage = 24,
+  perPage = 40,
   locale?: string
 ): Promise<CategoryWithProductsResponse> {
   const { data } = await api.get<CategoryWithProductsResponse>(`/categories/${slug}`, {

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AttributeController as AdminAttributeController;
 use App\Http\Controllers\Admin\AttributeValueController;
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InstagramProfileController;
 use App\Http\Controllers\Admin\RunController;
@@ -97,5 +98,20 @@ Route::prefix('admin')->group(function () {
         Route::get('profiles/{profile}/skipped-status', [RunController::class, 'skippedPostsStatus']);
         Route::post('profiles/{profile}/reprocess-skipped', [RunController::class, 'triggerReprocessSkipped']);
         Route::patch('profiles/{profile}/settings', [RunController::class, 'updateProfileSettings']);
+
+        // Backups
+        Route::prefix('backup')->group(function () {
+            Route::get('info', [BackupController::class, 'info']);
+            Route::get('database', [BackupController::class, 'downloadDatabase']);
+
+            // Media archive
+            Route::post('archive', [BackupController::class, 'startArchive']);
+            Route::get('archive/progress', [BackupController::class, 'archiveProgress']);
+            Route::get('archive/download', [BackupController::class, 'downloadArchive']);
+            Route::delete('archive', [BackupController::class, 'clearArchive']);
+
+            // Local files management
+            Route::delete('local', [BackupController::class, 'clearLocalFiles']);
+        });
     });
 });

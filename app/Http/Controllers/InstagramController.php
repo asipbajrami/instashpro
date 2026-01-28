@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\InstagramMedia;
 use App\Models\InstagramPost;
 use App\Models\InstagramProfile;
+use App\Services\BackupableStorage;
 use App\Services\Instagram\InstagramProfileService;
 use App\Services\Instagram\InstagramPostService;
 use Illuminate\Http\JsonResponse;
@@ -169,7 +170,7 @@ class InstagramController extends Controller
                 : "posts/{$shortcode}/video";
 
             $videoStoragePath = "{$basePath}/video.mp4";
-            Storage::disk('r2')->put($videoStoragePath, $videoContent);
+            BackupableStorage::put($videoStoragePath, $videoContent);
 
             $this->createMediaRecord($post, $videoStoragePath, 'video', 'video', $mediaId);
 
@@ -227,7 +228,7 @@ class InstagramController extends Controller
         exec($command);
 
         if (file_exists($tempFrame)) {
-            Storage::disk('r2')->put($framePath, file_get_contents($tempFrame));
+            BackupableStorage::put($framePath, file_get_contents($tempFrame));
             unlink($tempFrame);
             return $framePath;
         }
@@ -267,7 +268,7 @@ class InstagramController extends Controller
                 ? "posts/{$shortcode}/carousel/{$carouselId}/{$type}.jpg"
                 : "posts/{$shortcode}/{$type}.jpg";
 
-            Storage::disk('r2')->put($path, $response->body());
+            BackupableStorage::put($path, $response->body());
 
             $this->createMediaRecord(
                 $post,
@@ -319,7 +320,7 @@ class InstagramController extends Controller
                 ? "posts/{$shortcode}/carousel/{$carouselId}/thumb.jpg"
                 : "posts/{$shortcode}/thumb.jpg";
 
-            Storage::disk('r2')->put($thumbPath, $thumbData);
+            BackupableStorage::put($thumbPath, $thumbData);
 
             $this->createMediaRecord(
                 $post,

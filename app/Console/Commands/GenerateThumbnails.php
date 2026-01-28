@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\InstagramMedia;
+use App\Services\BackupableStorage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
@@ -104,8 +105,8 @@ class GenerateThumbnails extends Command
             imagedestroy($image);
             imagedestroy($thumb);
 
-            // Save thumbnail file
-            Storage::disk('r2')->put($thumbPath, $thumbData);
+            // Save thumbnail file (also copies to backup/)
+            BackupableStorage::put($thumbPath, $thumbData);
 
             // Create media record
             InstagramMedia::updateOrCreate(
