@@ -5,7 +5,7 @@
 
 echo "Starting thumbnail migration..."
 
-php artisan tinker --execute="
+docker compose exec -T backend php artisan tinker --execute="
 // 1. Delete mid images (files + DB records)
 echo '1. Deleting mid images...' . PHP_EOL;
 \$midMedia = \App\Models\InstagramMedia::whereIn('type', ['image_mid', 'carousel_mid'])->get();
